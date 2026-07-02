@@ -1,0 +1,39 @@
+<!-- src/main/resources/static/login.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>로그인</title>
+</head>
+<body>
+<h2>로그인</h2>
+
+<input id="username" placeholder="아이디" /><br/><br/>
+<input id="password" type="password" placeholder="비밀번호" /><br/><br/>
+<button onclick="login()">로그인</button>
+
+<script>
+    async function login() {
+        const body = {
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value
+        };
+
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        const json = await res.json();
+        if (res.ok) {
+            localStorage.setItem("token", json.data.accessToken);
+            alert("로그인 성공");
+            location.href = "/me.html";
+        } else {
+            alert("로그인 실패");
+        }
+    }
+</script>
+</body>
+</html>

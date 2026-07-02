@@ -1,0 +1,96 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        body {
+          font-family: Nanum;
+        }
+        h1 { font-size: 26px; }
+        h2 { font-size: 20px; margin-top: 20px; }
+        p { margin: 4px 0; }
+        ul { margin: 5px 0 10px 20px; }
+        hr { margin: 12px 0; }
+    </style>
+</head>
+<body style="padding: 24px; line-height: 1.6;">
+<h1>뚝딱 진단 리포트</h1>
+<hr />
+
+<h2>기본 정보</h2>
+<p><b>진단 ID</b>: <span th:text="${diagnosis.id}"></span></p>
+<p><b>상태</b>: <span th:text="${diagnosis.status.name()}"></span></p>
+<p><b>문제 유형</b>: <span th:text="${diagnosis.issueType.name()}"></span></p>
+<p><b>위험도</b>: <span th:text="${diagnosis.riskScore}"></span> / 100</p>
+<p><b>신뢰도</b>: <span th:text="${#numbers.formatDecimal(confidence, 1, 2)}"></span></p>
+<p><b>최종 판단</b>: <span th:text="${decision}"></span></p>
+
+<h2>요약</h2>
+<p th:text="${summary}"></p>
+
+<h2>판단 사유</h2>
+<ul th:if="${reasons != null and !reasons.isEmpty()}">
+    <li th:each="reason : ${reasons}" th:text="${reason}"></li>
+</ul>
+<p th:if="${reasons == null or reasons.isEmpty()}">없음</p>
+
+<h2>주의 사항</h2>
+<ul th:if="${cautionNotes != null and !cautionNotes.isEmpty()}">
+    <li th:each="note : ${cautionNotes}" th:text="${note}"></li>
+</ul>
+<p th:if="${cautionNotes == null or cautionNotes.isEmpty()}">없음</p>
+
+<h2>예상 견적</h2>
+<p><b>수준</b>: <span th:text="${estimate != null ? estimate.level() : 'UNKNOWN'}"></span></p>
+<p><b>범위</b>: <span th:text="${estimate != null ? estimate.minWon() : 0}"></span>원 ~ <span th:text="${estimate != null ? estimate.maxWon() : 0}"></span>원</p>
+
+<hr />
+<h2>수리 전 이미지</h2>
+<div th:if="${beforeImages != null and !beforeImages.isEmpty()}">
+    <img th:each="img : ${beforeImages}"
+         th:src="${img}"
+         style="width:300px; margin:5px;" />
+</div>
+<p th:if="${beforeImages == null or beforeImages.isEmpty()}">이미지 없음</p>
+
+<hr />
+<h2>수리 후 이미지</h2>
+<div th:if="${afterImages != null and !afterImages.isEmpty()}">
+    <img th:each="img : ${afterImages}"
+         th:src="${img}"
+         style="width:300px; margin:5px;" />
+</div>z
+<p th:if="${afterImages == null or afterImages.isEmpty()}">이미지 없음</p>
+
+<div th:if="${draft != null}">
+    <hr />
+    <h2>수리 후 기록 (사용자 입력)</h2>
+
+    <p><b>수리 방식</b>: <span th:text="${draft.repairMethod}">-</span></p>
+    <p th:if="${draft.completionDate != null}">
+        <b>완료일</b>: <span th:text="${draft.completionDate}"></span>
+    </p>
+
+    <!-- 🔥 DIY -->
+    <div th:if="${draft.repairMethod == 'DIY'}">
+        <p><b>사용 자재</b>: <span th:text="${draft.diyMaterialsUsed}">-</span></p>
+        <p><b>자재비</b>: <span th:text="${draft.diyMaterialCost}">0</span>원</p>
+        <p><b>작업 메모</b>: <span th:text="${draft.diyWorkMemo}">-</span></p>
+    </div>
+
+    <!-- 🔥 업체 -->
+    <div th:if="${draft.repairMethod == 'PRO'}">
+        <p><b>업체명</b>: <span th:text="${draft.contractorName}">-</span></p>
+        <p><b>연락처</b>: <span th:text="${draft.contractorContact}">-</span></p>
+        <p><b>재료비</b>: <span th:text="${draft.materialCost}">0</span>원</p>
+        <p><b>인건비</b>: <span th:text="${draft.laborCost}">0</span>원</p>
+        <p><b>총 비용</b>: <span th:text="${draft.totalCost}">0</span>원</p>
+    </div>
+
+    <p><b>작업 요약</b></p>
+    <p th:text="${draft.repairSummary}"></p>
+
+    <p><b>메모</b></p>
+    <p th:text="${draft.notes}"></p>
+</div>
+</body>
+</html>

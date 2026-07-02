@@ -1,0 +1,151 @@
+server:
+  address: 0.0.0.0
+  port: 8080
+  forward-headers-strategy: framework
+  tomcat:
+    max-swallow-size: 120MB
+    max-http-form-post-size: 120MB
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/appdb
+    username: appuser
+    password: apppass
+    hikari:
+      maximum-pool-size: 10
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 80MB
+      max-request-size: 120MB
+
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: ${SMTP_USERNAME:a57cd0001@smtp-brevo.com}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  jackson:
+    time-zone: Asia/Seoul
+    serialization:
+      write-dates-as-timestamps: false
+
+app:
+  jwt:
+    issuer: backend1-core
+    secret: duckttack-secret-duckttack-secret-duckttack-secret-123456
+    access-token-minutes: 120
+
+  email:
+    from: limseeun566@gmail.com
+    verification:
+      ttl-minutes: 10
+
+  cors:
+    allowed-origins: "*"
+
+  refresh:
+    days: 30
+    pepper: duckpepper
+
+upload:
+  max-files: 5
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+
+ai:
+  base-url: https://frostily-sworn-shifting.ngrok-free.dev
+  retry:
+    max-attempts: 3
+    delay-ms: 300
+    multiplier: 2.0
+
+# ⭐ GCP 에 배포된 YOLO 객체 탐지 서버 — AI 팀원이 알려주는 실제 URL 로 교체
+#    인증이 걸려 있으면 yolo.api-key 에 토큰 주입 (yolo-server 가 Authorization: Bearer <key> 검증)
+#    multipart-field 는 YOLO 측에서 수신할 form 필드 이름 (default: image)
+yolo:
+  base-url: ${YOLO_BASE_URL:https://frostily-sworn-shifting.ngrok-free.dev}
+  api-key: ${YOLO_API_KEY:}
+  multipart-field: ${YOLO_MULTIPART_FIELD:image}
+
+# ⭐ LLM (DIY 가이드 + 자재 추천 생성)
+#    OpenAI 호환 API 기준 — 공급자만 다를 뿐 동일 코드로 호출.
+#
+#    [현재 기본값: Google Gemini 무료 티어]
+#      base-url : https://generativelanguage.googleapis.com/v1beta/openai
+#      model    : gemini-2.0-flash  (gemini-2.5-flash, gemini-2.5-pro 도 가능)
+#      api-key  : https://aistudio.google.com/apikey 에서 발급 (무료, 카드등록 X)
+#      한도     : 일 1500건, 분당 15건  → 졸프 데모/테스트엔 충분
+#
+#    [OpenAI 로 갈아끼고 싶으면]
+#      LLM_BASE_URL=https://api.openai.com/v1
+#      LLM_MODEL=gpt-4o-mini
+#      LLM_API_KEY=sk-proj-...
+#
+#    api-key 는 절대 yml/git 에 박지 말고 LLM_API_KEY 환경변수로 주입.
+llm:
+  base-url: ${LLM_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+  api-key: ${LLM_API_KEY:}
+  model: ${LLM_MODEL:gemini-2.0-flash}
+  temperature: 0.3
+  max-tokens: ${LLM_MAX_TOKENS:2000}
+
+storage:
+  local:
+    root: ./storage
+    public-base-url: http://192.168.0.38:8080
+
+report:
+  share:
+    minutes: 60
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+
+naver:
+  api:
+    client-id: aqAOaKc8a2cX9f89Z4Ut
+    client-secret: SagqZ25W1Y
+    search-url: https://openapi.naver.com/v1/search/local.json
+    ncp-client-id: 2fodq6j4zt
+    ncp-client-secret: dt29ilPU4aKy8bQ825P9Eu80TM3bE3uElrz080yn
+    geocode-url: https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode
+
+# ⚠️ 운영 환경에선 아래 rest-key 를 env var (KAKAO_REST_KEY) 로 주입하고 yml 에선 ${KAKAO_REST_KEY} 로 참조하세요.
+# 지금은 개발 편의상 기존 naver 키와 동일한 방식(하드코딩)으로 두었습니다.
+kakao:
+  api:
+    rest-key: ${KAKAO_REST_KEY:ccd56627d820f9a75d0929ce7396eda5}
+    local-url: https://dapi.kakao.com/v2/local/search/keyword.json

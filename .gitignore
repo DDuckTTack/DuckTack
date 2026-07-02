@@ -1,0 +1,38 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Java
+*.class
+*.jar
+*.war
+
+# Node
+node_modules/
+.expo/
+dist/
+
+# Env / Secrets
+.env
+.env.*
+
+# Storage
+storage/
+uploads/
+reports/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# AI model weights (too large for GitHub — keep locally or use LFS)
+*.pth
+*.pt

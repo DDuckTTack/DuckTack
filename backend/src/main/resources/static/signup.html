@@ -1,0 +1,44 @@
+<!-- src/main/resources/static/signup.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>회원가입</title>
+</head>
+<body>
+<h2>회원가입</h2>
+
+<input id="username" placeholder="아이디" />
+<button onclick="checkUsername()">중복검사</button><br/><br/>
+
+<input id="password" type="password" placeholder="비밀번호" /><br/><br/>
+<input id="phone" placeholder="전화번호" /><br/><br/>
+
+<button onclick="signup()">회원가입</button>
+
+<script>
+    async function checkUsername() {
+        const username = document.getElementById("username").value;
+        const res = await fetch(`/api/auth/check-username?username=${username}`);
+        const json = await res.json();
+        alert(json.data.available ? "사용 가능" : "이미 존재");
+    }
+
+    async function signup() {
+        const body = {
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value,
+            phoneNumber: document.getElementById("phone").value
+        };
+
+        const res = await fetch("/api/auth/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        alert(res.ok ? "회원가입 성공" : "실패");
+    }
+</script>
+</body>
+</html>

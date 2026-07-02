@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./Backend
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
+      SPRING_DATASOURCE_USERNAME: appuser
+      SPRING_DATASOURCE_PASSWORD: apppass
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_TO_LONG_RANDOM_SECRET_CHANGE_ME}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-30}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      UPLOAD_MAX_FILES: ${UPLOAD_MAX_FILES:-5}
+      UPLOAD_MAX_FILE_SIZE: ${UPLOAD_MAX_FILE_SIZE:-10MB}
+      UPLOAD_MAX_REQUEST_SIZE: ${UPLOAD_MAX_REQUEST_SIZE:-30MB}
+      AI_RETRY_MAX_ATTEMPTS: ${AI_RETRY_MAX_ATTEMPTS:-3}
+      AI_RETRY_DELAY_MS: ${AI_RETRY_DELAY_MS:-300}
+      AI_RETRY_MULTIPLIER: ${AI_RETRY_MULTIPLIER:-2.0}
+      STORAGE_LOCAL_ROOT: /data/storage
+      STORAGE_PUBLIC_BASE_URL: http://192.168.0.38:8080
+      AI_BASE_URL: http://ai-server:5000
+      YOLO_BASE_URL: http://ai-server:5000
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-gemini-2.0-flash}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-8192}
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_storage:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ai-server:
+    build:
+      context: ./ai-server
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./ai-server/sam_vit_b.pth:/app/sam_vit_b.pth
+
+volumes:
+  pgdata:
+  backend_storage:
