@@ -25,7 +25,11 @@ public enum ErrorCode {
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "서버 오류가 발생했습니다."),
   PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "물품을 찾을 수 없습니다."),
   REVIEW_DUPLICATE(HttpStatus.CONFLICT, "REVIEW_DUPLICATE", "이미 이 업체에 리뷰를 작성했습니다."),
-  REVIEW_INVALID_TARGET(HttpStatus.BAD_REQUEST, "REVIEW_INVALID_TARGET", "companyId 또는 kakaoPlaceId+kakaoPlaceName 중 하나는 필수입니다.");
+  REVIEW_INVALID_TARGET(HttpStatus.BAD_REQUEST, "REVIEW_INVALID_TARGET", "companyId 또는 kakaoPlaceId+kakaoPlaceName 중 하나는 필수입니다."),
+  COMPANY_HAS_NO_ACCOUNT(HttpStatus.NOT_FOUND, "COMPANY_HAS_NO_ACCOUNT", "이 업체는 아직 쪽지를 받을 수 있는 계정이 없습니다."),
+  CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "대화를 찾을 수 없습니다."),
+  MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_NOT_FOUND", "메시지를 찾을 수 없습니다."),
+  MESSAGE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_REPORT_NOT_FOUND", "신고 내역을 찾을 수 없습니다.");
   private final HttpStatus status;
   private final String code;
   private final String message;
