@@ -29,6 +29,11 @@ function AdminLayout() {
             label: "리뷰 관리",
             icon: "⭐",
             path: "/admin/reviews"
+        },
+        {
+            label: "커뮤니티 관리",
+            icon: "💬",
+            path: "/admin/community"
         }
     ];
 

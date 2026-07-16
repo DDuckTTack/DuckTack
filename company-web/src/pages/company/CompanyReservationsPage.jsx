@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
 
 function extractData(responseData) {
@@ -17,6 +18,7 @@ function formatWon(value) {
 }
 
 function CompanyReservationsPage() {
+    const navigate = useNavigate();
     const [list, setList] = useState([]);
     const [selectedDate, setSelectedDate] = useState(todayString());
     const [loading, setLoading] = useState(false);
@@ -653,6 +655,27 @@ function CompanyReservationsPage() {
                                         노쇼
                                     </button>
                                 )}
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        navigate(
+                                            `/company/messages?with=${encodeURIComponent(r.customerName || "고객")}&type=USER`
+                                        )
+                                    }
+                                    style={{
+                                        flex: 1,
+                                        padding: "11px",
+                                        borderRadius: "10px",
+                                        fontWeight: "800",
+                                        cursor: "pointer",
+                                        border: "1px solid #93C5FD",
+                                        backgroundColor: "#EFF6FF",
+                                        color: "#1D4ED8"
+                                    }}
+                                >
+                                    ✉️ 쪽지
+                                </button>
                             </div>
                         </div>
                     ))}

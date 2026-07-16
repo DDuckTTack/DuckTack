@@ -10,6 +10,7 @@ out/
 # Java
 *.class
 *.jar
+!gradle-wrapper.jar
 *.war
 
 # Node
@@ -21,8 +22,9 @@ dist/
 .env
 .env.*
 
-# Storage
-storage/
+# Storage (runtime upload dir only — do not use a bare "storage/" pattern,
+# it also matches the com.example.backend1.storage source package)
+/backend/storage/
 uploads/
 reports/
 

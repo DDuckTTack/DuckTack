@@ -1,5 +1,6 @@
 import {useState} from "react";
 import {createPortal} from "react-dom";
+import {useNavigate} from "react-router-dom";
 import axios from "../../api/axios";
 
 function formatVisitDate(value) {
@@ -84,6 +85,7 @@ export default function ReservationList({
                                             setReservations,
                                             refreshCalendar
                                         }) {
+    const navigate = useNavigate();
     const [detail, setDetail] = useState(null);
     const [selectedId, setSelectedId] = useState(null);
     const [loadingId, setLoadingId] = useState(null);
@@ -932,6 +934,21 @@ DDuckTTack 제휴업체 드림
                         {detail.customerName || "-"}
                         {detail.phoneNumber ? ` (${detail.phoneNumber})` : ""}
                     </div>
+
+                    <button
+                        type="button"
+                        style={{
+                            ...styles.mailBtn,
+                            marginBottom: "12px"
+                        }}
+                        onClick={() =>
+                            navigate(
+                                `/company/messages?with=${encodeURIComponent(detail.customerName || "고객")}&type=USER`
+                            )
+                        }
+                    >
+                        ✉️ 쪽지 보내기
+                    </button>
 
                     <div style={styles.label}>고객 이메일</div>
                     {canViewCustomerEmail(detail) && detail.customerEmail ? (
