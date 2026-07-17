@@ -78,3 +78,10 @@ export const REPORT_REASONS = [
 export function boardTypeLabel(value) {
     return BOARD_TYPES.find((b) => b.value === value)?.label ?? value;
 }
+
+// regionCode is used for exact-match filtering on the backend, so it must be
+// derived deterministically from the free-text region name (whitespace should
+// not cause a search miss). regionName stays as the raw display text.
+export function normalizeRegionCode(value) {
+    return (value || "").trim().replace(/\s+/g, "");
+}

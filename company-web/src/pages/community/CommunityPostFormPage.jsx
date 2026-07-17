@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { BOARD_TYPES, createPost, getPost, updatePost } from "../../api/community";
+import { BOARD_TYPES, createPost, getPost, normalizeRegionCode, updatePost } from "../../api/community";
 
 export default function CommunityPostFormPage() {
     const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function CommunityPostFormPage() {
             boardType,
             title: title.trim(),
             content: content.trim(),
-            regionCode: boardType === "LOCAL" ? regionName.trim() : null,
+            regionCode: boardType === "LOCAL" ? normalizeRegionCode(regionName) : null,
             regionName: boardType === "LOCAL" ? regionName.trim() : null,
             productName: productName.trim() || null,
         };

@@ -343,17 +343,17 @@ export default function CommunityPostDetailPage() {
                             🚨 신고
                         </button>
                         {post.editable ? (
-                            <>
-                                <button
-                                    style={styles.smallBtn}
-                                    onClick={() => navigate(`/company/community/${post.postId}/edit`)}
-                                >
-                                    수정
-                                </button>
-                                <button style={styles.dangerBtn} onClick={handleDeletePost}>
-                                    삭제
-                                </button>
-                            </>
+                            <button
+                                style={styles.smallBtn}
+                                onClick={() => navigate(`/company/community/${post.postId}/edit`)}
+                            >
+                                수정
+                            </button>
+                        ) : null}
+                        {post.deletable ? (
+                            <button style={styles.dangerBtn} onClick={handleDeletePost}>
+                                삭제
+                            </button>
                         ) : null}
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BOARD_TYPES, boardTypeLabel, listPosts } from "../../api/community";
+import { BOARD_TYPES, boardTypeLabel, listPosts, normalizeRegionCode } from "../../api/community";
 
 function formatDate(value) {
     if (!value) return "-";
@@ -63,7 +63,7 @@ export default function CommunityListPage() {
         e.preventDefault();
         setPage(0);
         setKeyword(keywordInput.trim());
-        setRegionCode(regionInput.trim());
+        setRegionCode(normalizeRegionCode(regionInput));
     };
 
     const styles = {
