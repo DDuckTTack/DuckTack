@@ -4,51 +4,90 @@ import com.example.backend1.common.ApiException;
 import com.example.backend1.common.ApiResponse;
 import com.example.backend1.common.ErrorCode;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 
 @RestController
-@RequestMapping(value={"/api/files"})
-@SecurityRequirement(name="bearerAuth")
+@RequestMapping("/api/files")
+@SecurityRequirement(name = "bearerAuth")
 public class FileController {
+
+    private static final Logger log = LoggerFactory.getLogger(FileController.class);
+
     private final FileService fileService;
     private final int maxFilesPerRequest;
 
-    public FileController(FileService fileService, @Value(value="${upload.max-files:5}") int maxFilesPerRequest) {
+    public FileController(
+            FileService fileService,
+            @Value("${upload.max-files:5}") int maxFilesPerRequest
+    ) {
         this.fileService = fileService;
         this.maxFilesPerRequest = maxFilesPerRequest;
     }
 
-    @PostMapping(value={"/upload"})
-    public ApiResponse<List<FileUploadResponse>> upload(Authentication authentication, @RequestPart(value="files") List<MultipartFile> files) {
+    // 파일 업로드
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<List<FileUploadResponse>> upload(
+            Authentication authentication,
+            HttpServletRequest request,
+            @RequestParam("files") List<MultipartFile> files
+    ) {
+        log.debug("파일 업로드 요청: contentType={}, fileCount={}", request.getContentType(), files.size());
+
+        if (authentication == null) {
+            throw new ApiException(ErrorCode.AUTH_FAILED);
+        }
+
         if (files == null || files.isEmpty()) {
             throw new ApiException(ErrorCode.INVALID_INPUT);
         }
-        if (files.size() > this.maxFilesPerRequest) {
-            throw new ApiException(ErrorCode.INVALID_INPUT);
-        }
-        List<FileUploadResponse> res = files.stream().map(f -> this.fileService.saveUploads(authentication.getName(), (MultipartFile)f)).map(f -> new FileUploadResponse(f.key(), f.url(), f.contentType(), f.sizeBytes())).toList();
+
+        var res = files.stream()
+                .map(f -> fileService.saveUploads(authentication.getName(), f))
+                .map(f -> new FileUploadResponse(
+                        f.key(),
+                        f.url(),
+                        f.contentType(),
+                        f.sizeBytes()
+                ))
+                .toList();
+
         return ApiResponse.ok(res);
     }
+    // 파일 다운로드
+    @GetMapping("/{key}")
+    public ResponseEntity<byte[]> download(
+            Authentication authentication,
+            @PathVariable String key
+    ) {
+        if (authentication == null) {
+            throw new ApiException(ErrorCode.AUTH_FAILED);
+        }
 
-    @GetMapping(value={"/{key}"})
-    public ResponseEntity<byte[]> download(Authentication authentication, @PathVariable String key) {
-        FileService.FileDownload dl = this.fileService.downloadOwned(authentication.getName(), key);
+        var dl = fileService.downloadOwned(authentication.getName(), key);
+
         return ResponseEntity.ok()
-                .header("Content-Type", dl.contentType())
-                .header("Content-Disposition", "attachment; filename=\"" + dl.filename().replace("\"", "") + "\"")
+                .header(HttpHeaders.CONTENT_TYPE, dl.contentType())
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" +
+                                dl.filename().replace("\"", "") + "\"")
                 .body(dl.bytes());
     }
 
-    public record FileUploadResponse(String key, String url, String contentType, long sizeBytes) {
-    }
+    public record FileUploadResponse(
+            String key,
+            String url,
+            String contentType,
+            long sizeBytes
+    ) {}
 }

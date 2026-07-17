@@ -4,6 +4,6 @@ public enum FileCategory {
     UPLOAD,
     REPORT,
     BEFORE_IMAGE,
-    AFTER_IMAGE;
-
+    AFTER_IMAGE
 }
+
