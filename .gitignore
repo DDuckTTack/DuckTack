@@ -21,10 +21,10 @@ dist/
 .env
 .env.*
 
-# Storage
-storage/
-uploads/
-reports/
+# Storage (runtime upload/report output only, e.g. backend/storage/uploads,
+# backend/storage/reports — anchored so it doesn't also match the
+# backend/src/main/java/com/example/backend1/storage/ source package)
+/backend/storage/
 
 # OS
 .DS_Store
