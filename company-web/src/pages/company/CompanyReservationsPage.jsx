@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
+import { getOrCreateConversation } from "../../api/messages";
 
 function extractData(responseData) {
     return responseData?.data ?? responseData;
@@ -129,6 +130,19 @@ function CompanyReservationsPage() {
             }
         } finally {
             setSubmittingId(null);
+        }
+    };
+
+    const openMessageThread = async (customerId) => {
+        if (!customerId) {
+            alert("고객 계정 정보를 찾을 수 없어 쪽지를 보낼 수 없습니다.");
+            return;
+        }
+        try {
+            const conversation = await getOrCreateConversation({ targetUserId: customerId });
+            navigate(`/company/messages/${conversation.conversationId}`);
+        } catch (e) {
+            alert(e.response?.data?.message || "쪽지방을 열지 못했습니다.");
         }
     };
 
@@ -658,11 +672,7 @@ function CompanyReservationsPage() {
 
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        navigate(
-                                            `/company/messages?with=${encodeURIComponent(r.customerName || "고객")}&type=USER`
-                                        )
-                                    }
+                                    onClick={() => openMessageThread(r.customerId)}
                                     style={{
                                         flex: 1,
                                         padding: "11px",

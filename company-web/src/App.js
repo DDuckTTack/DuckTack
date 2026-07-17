@@ -74,7 +74,7 @@ function App() {
                 <Route path="/company/community/:postId" element={<CommunityPostDetailPage />} />
                 <Route path="/company/community/:postId/edit" element={<CommunityPostFormPage />} />
 
-                {/* 쪽지 (목업) */}
+                {/* 쪽지 */}
                 <Route path="/company/messages" element={<MessagesInboxPage />} />
                 <Route path="/company/messages/:threadId" element={<MessageThreadPage />} />
 

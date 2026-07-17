@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getThread, reportThread, sendMessage } from "../../mock/messages";
+import { getConversation, listMessages, reportMessage, sendMessage } from "../../api/messages";
 import ReportModal from "../../components/community/ReportModal";
 
-function formatTime(ts) {
-    const date = new Date(ts);
+const POLL_INTERVAL_MS = 1000;
+
+function formatTime(value) {
+    // backend sends OffsetDateTime as epoch seconds (with fractional nanos) instead of
+    // an ISO string in practice, despite the documented contract — normalize both.
+    const date = new Date(typeof value === "number" ? value * 1000 : value);
+    if (Number.isNaN(date.getTime())) return "";
     const hh = String(date.getHours()).padStart(2, "0");
     const mi = String(date.getMinutes()).padStart(2, "0");
     return `${hh}:${mi}`;
@@ -13,34 +18,83 @@ function formatTime(ts) {
 export default function MessageThreadPage() {
     const navigate = useNavigate();
     const { threadId } = useParams();
-    const [thread, setThread] = useState(null);
+    const [conversation, setConversation] = useState(null);
+    const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
     const [reporting, setReporting] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState("");
     const bottomRef = useRef(null);
-
-    const reload = () => setThread(getThread(threadId));
+    const lastIdRef = useRef(null);
+    const pollTimerRef = useRef(null);
 
     useEffect(() => {
-        reload();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        let cancelled = false;
+        setLoading(true);
+        setErrorMessage("");
+        lastIdRef.current = null;
+
+        Promise.all([getConversation(threadId), listMessages(threadId)])
+            .then(([conv, msgs]) => {
+                if (cancelled) return;
+                setConversation(conv);
+                setMessages(msgs);
+                if (msgs.length > 0) lastIdRef.current = msgs[msgs.length - 1].id;
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setErrorMessage(err.response?.data?.message || "대화를 불러오지 못했습니다.");
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [threadId]);
+
+    useEffect(() => {
+        const poll = async () => {
+            if (document.hidden || lastIdRef.current === null) return;
+            try {
+                const fresh = await listMessages(threadId, { afterId: lastIdRef.current });
+                if (fresh.length > 0) {
+                    setMessages((prev) => [...prev, ...fresh]);
+                    lastIdRef.current = fresh[fresh.length - 1].id;
+                }
+            } catch {
+                // transient polling failure — retry on next tick
+            }
+        };
+
+        pollTimerRef.current = setInterval(poll, POLL_INTERVAL_MS);
+        return () => clearInterval(pollTimerRef.current);
     }, [threadId]);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [thread?.messages?.length]);
+    }, [messages.length]);
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
-        sendMessage(threadId, input.trim());
-        setInput("");
-        reload();
+        const content = input.trim();
+        if (!content) return;
+        try {
+            const saved = await sendMessage(threadId, content);
+            setInput("");
+            setMessages((prev) => [...prev, saved]);
+            lastIdRef.current = saved.id;
+        } catch (err) {
+            setErrorMessage(err.response?.data?.message || "메시지 전송에 실패했습니다.");
+        }
     };
 
     const submitReport = async ({ reason, detail }) => {
-        reportThread(threadId, reason, detail);
+        await reportMessage({ conversationId: Number(threadId), reason, detail });
         setReporting(false);
-        window.alert("신고가 접수되었습니다. (데모 데이터)");
+        window.alert("신고가 접수되었습니다.");
     };
 
     const styles = {
@@ -149,15 +203,29 @@ export default function MessageThreadPage() {
             fontWeight: "800",
             cursor: "pointer",
         },
+        errorBox: {
+            maxWidth: "760px",
+            margin: "0 auto 18px",
+            backgroundColor: "#FEF2F2",
+            color: "#991B1B",
+            border: "1px solid #FECACA",
+            borderRadius: "16px",
+            padding: "18px",
+            fontWeight: "800",
+            width: "100%",
+            boxSizing: "border-box",
+        },
     };
 
-    if (!thread) {
+    if (loading) return <div style={styles.page}>불러오는 중...</div>;
+
+    if (!conversation) {
         return (
             <div style={styles.page}>
                 <button style={styles.backBtn} onClick={() => navigate("/company/messages")}>
                     ← 쪽지함
                 </button>
-                <div style={{ marginTop: 24 }}>대화를 찾을 수 없습니다.</div>
+                <div style={{ marginTop: 24 }}>{errorMessage || "대화를 찾을 수 없습니다."}</div>
             </div>
         );
     }
@@ -173,24 +241,26 @@ export default function MessageThreadPage() {
                 </button>
             </div>
 
+            {errorMessage ? <div style={styles.errorBox}>{errorMessage}</div> : null}
+
             <div style={styles.card}>
                 <div style={styles.header}>
-                    {thread.counterpartName}
+                    {conversation.otherDisplayName}
                     <span style={{ fontWeight: 700, fontSize: 13, color: "#94A3B8", marginLeft: 8 }}>
-                        {thread.counterpartType === "USER" ? "사용자" : "업체"}
+                        {conversation.otherIsCompany ? "업체" : "사용자"}
                     </span>
                 </div>
 
                 <div style={styles.messages}>
-                    {thread.messages.length === 0 ? (
+                    {messages.length === 0 ? (
                         <div style={{ textAlign: "center", color: "#94A3B8", fontWeight: 700 }}>
                             대화를 시작해보세요.
                         </div>
                     ) : (
-                        thread.messages.map((m) => (
+                        messages.map((m) => (
                             <div key={m.id}>
-                                <div style={styles.bubbleRow(m.sender === "me")}>
-                                    <div style={styles.bubble(m.sender === "me")}>{m.text}</div>
+                                <div style={styles.bubbleRow(m.mine)}>
+                                    <div style={styles.bubble(m.mine)}>{m.content}</div>
                                 </div>
                                 <div style={styles.time}>{formatTime(m.createdAt)}</div>
                             </div>
@@ -205,6 +275,7 @@ export default function MessageThreadPage() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="메시지를 입력하세요"
+                        maxLength={2000}
                     />
                     <button type="submit" style={styles.sendBtn}>
                         전송

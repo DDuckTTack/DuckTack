@@ -5,6 +5,7 @@ import java.time.LocalDate;
 public record ReservationResponse(
         Long id,
         String customerName,
+        Long customerId,
         String issueSummary,
         String visitDate,
         String visitTime,
@@ -24,7 +25,7 @@ public record ReservationResponse(
             String status,
             String customerEmail
     ) {
-        this(id, customerName, issueSummary, visitDate, visitTime, status, customerEmail, null, null, null, null);
+        this(id, customerName, null, issueSummary, visitDate, visitTime, status, customerEmail, null, null, null, null);
     }
 
     public ReservationResponse(
@@ -34,6 +35,6 @@ public record ReservationResponse(
             String visitDate,
             String status
     ) {
-        this(id, customerName, issueSummary, visitDate, null, status, null, null, null, null, null);
+        this(id, customerName, null, issueSummary, visitDate, null, status, null, null, null, null, null);
     }
 }

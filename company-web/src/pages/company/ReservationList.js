@@ -2,6 +2,7 @@ import {useState} from "react";
 import {createPortal} from "react-dom";
 import {useNavigate} from "react-router-dom";
 import axios from "../../api/axios";
+import {getOrCreateConversation} from "../../api/messages";
 
 function formatVisitDate(value) {
     if (!value) return "-";
@@ -93,6 +94,19 @@ export default function ReservationList({
 
     const extractData = (responseData) => {
         return responseData?.data ?? responseData;
+    };
+
+    const openMessageThread = async (customerId) => {
+        if (!customerId) {
+            alert("고객 계정 정보를 찾을 수 없어 쪽지를 보낼 수 없습니다.");
+            return;
+        }
+        try {
+            const conversation = await getOrCreateConversation({ targetUserId: customerId });
+            navigate(`/company/messages/${conversation.conversationId}`);
+        } catch (e) {
+            alert(e.response?.data?.message || "쪽지방을 열지 못했습니다.");
+        }
     };
 
     const list = Array.isArray(reservations) ? reservations : [];
@@ -941,11 +955,7 @@ DDuckTTack 제휴업체 드림
                             ...styles.mailBtn,
                             marginBottom: "12px"
                         }}
-                        onClick={() =>
-                            navigate(
-                                `/company/messages?with=${encodeURIComponent(detail.customerName || "고객")}&type=USER`
-                            )
-                        }
+                        onClick={() => openMessageThread(detail.customerId)}
                     >
                         ✉️ 쪽지 보내기
                     </button>

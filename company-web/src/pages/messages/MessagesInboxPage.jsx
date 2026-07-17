@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { getOrCreateThread, getThreads } from "../../mock/messages";
+import { useNavigate } from "react-router-dom";
+import { listConversations } from "../../api/messages";
 
-function formatTime(ts) {
-    if (!ts) return "";
-    const date = new Date(ts);
+function formatTime(value) {
+    if (!value) return "";
+    // backend sends OffsetDateTime as epoch seconds (with fractional nanos) instead of
+    // an ISO string in practice, despite the documented contract — normalize both.
+    const date = new Date(typeof value === "number" ? value * 1000 : value);
+    if (Number.isNaN(date.getTime())) return "";
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
@@ -15,21 +18,30 @@ function formatTime(ts) {
 
 export default function MessagesInboxPage() {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const [filterType, setFilterType] = useState("");
-    const [threads, setThreads] = useState([]);
+    const [conversations, setConversations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState("");
 
     useEffect(() => {
-        const withName = searchParams.get("with");
-        const withType = searchParams.get("type");
-        if (withName && withType) {
-            const thread = getOrCreateThread(withName, withType);
-            navigate(`/company/messages/${thread.id}`, { replace: true });
-        }
-    }, [searchParams, navigate]);
-
-    useEffect(() => {
-        setThreads(getThreads(filterType || undefined));
+        let cancelled = false;
+        setLoading(true);
+        setErrorMessage("");
+        listConversations({ type: filterType || undefined, size: 50 })
+            .then((res) => {
+                if (!cancelled) setConversations(res.content ?? []);
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setErrorMessage(err.response?.data?.message || "쪽지함을 불러오지 못했습니다.");
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [filterType]);
 
     const styles = {
@@ -57,18 +69,8 @@ export default function MessagesInboxPage() {
             border: "1px solid #E2E8F0",
             marginBottom: "24px",
         },
-        titleRow: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" },
+        titleRow: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" },
         title: { margin: 0, fontSize: "34px", fontWeight: "900" },
-        demoBadge: {
-            fontSize: "12px",
-            fontWeight: "800",
-            color: "#B45309",
-            backgroundColor: "#FFFBEB",
-            border: "1px solid #FDE68A",
-            borderRadius: "999px",
-            padding: "5px 12px",
-        },
-        subtitle: { color: "#64748B", fontSize: "14px", fontWeight: "600", marginBottom: "20px" },
         tabs: { display: "flex", gap: "8px" },
         tab: (active) => ({
             padding: "10px 18px",
@@ -118,6 +120,15 @@ export default function MessagesInboxPage() {
             padding: "3px 8px",
             marginLeft: "8px",
         },
+        unreadBadge: {
+            fontSize: "11px",
+            fontWeight: "900",
+            color: "#FFFFFF",
+            backgroundColor: "#EF4444",
+            borderRadius: "999px",
+            padding: "2px 8px",
+            marginLeft: "8px",
+        },
         time: { fontSize: "12px", color: "#94A3B8", fontWeight: "700" },
         preview: {
             fontSize: "13px",
@@ -128,6 +139,15 @@ export default function MessagesInboxPage() {
             whiteSpace: "nowrap",
         },
         empty: { padding: "60px", textAlign: "center", color: "#94A3B8", fontWeight: "900" },
+        errorBox: {
+            backgroundColor: "#FEF2F2",
+            color: "#991B1B",
+            border: "1px solid #FECACA",
+            borderRadius: "16px",
+            padding: "18px",
+            fontWeight: "800",
+            marginBottom: "18px",
+        },
     };
 
     return (
@@ -139,10 +159,6 @@ export default function MessagesInboxPage() {
             <section style={styles.header}>
                 <div style={styles.titleRow}>
                     <h1 style={styles.title}>✉️ 쪽지함</h1>
-                    <span style={styles.demoBadge}>데모용 로컬 데이터</span>
-                </div>
-                <div style={styles.subtitle}>
-                    쪽지 기능은 아직 서버와 연동되지 않아, 이 브라우저에만 저장되는 미리보기 데이터입니다.
                 </div>
 
                 <div style={styles.tabs}>
@@ -158,34 +174,40 @@ export default function MessagesInboxPage() {
                 </div>
             </section>
 
+            {errorMessage ? <div style={styles.errorBox}>{errorMessage}</div> : null}
+
             <section style={styles.listSection}>
-                {threads.length === 0 ? (
+                {loading ? (
+                    <div style={styles.empty}>불러오는 중...</div>
+                ) : conversations.length === 0 ? (
                     <div style={styles.empty}>쪽지가 없습니다.</div>
                 ) : (
-                    threads.map((t) => {
-                        const last = t.messages[t.messages.length - 1];
-                        return (
-                            <div
-                                key={t.id}
-                                style={styles.row}
-                                onClick={() => navigate(`/company/messages/${t.id}`)}
-                            >
-                                <div style={styles.avatar}>{t.counterpartName.slice(0, 1)}</div>
-                                <div style={styles.rowMain}>
-                                    <div style={styles.rowTop}>
-                                        <span>
-                                            <span style={styles.name}>{t.counterpartName}</span>
-                                            <span style={styles.typeBadge}>
-                                                {t.counterpartType === "USER" ? "사용자" : "업체"}
-                                            </span>
+                    conversations.map((c) => (
+                        <div
+                            key={c.conversationId}
+                            style={styles.row}
+                            onClick={() => navigate(`/company/messages/${c.conversationId}`)}
+                        >
+                            <div style={styles.avatar}>{(c.otherDisplayName || "?").slice(0, 1)}</div>
+                            <div style={styles.rowMain}>
+                                <div style={styles.rowTop}>
+                                    <span>
+                                        <span style={styles.name}>{c.otherDisplayName}</span>
+                                        <span style={styles.typeBadge}>
+                                            {c.otherIsCompany ? "업체" : "사용자"}
                                         </span>
-                                        <span style={styles.time}>{formatTime(last?.createdAt)}</span>
-                                    </div>
-                                    <div style={styles.preview}>{last?.text ?? "대화를 시작해보세요."}</div>
+                                        {c.unreadCount > 0 ? (
+                                            <span style={styles.unreadBadge}>{c.unreadCount}</span>
+                                        ) : null}
+                                    </span>
+                                    <span style={styles.time}>{formatTime(c.lastMessageAt)}</span>
+                                </div>
+                                <div style={styles.preview}>
+                                    {c.lastMessagePreview ?? "대화를 시작해보세요."}
                                 </div>
                             </div>
-                        );
-                    })
+                        </div>
+                    ))
                 )}
             </section>
         </div>
