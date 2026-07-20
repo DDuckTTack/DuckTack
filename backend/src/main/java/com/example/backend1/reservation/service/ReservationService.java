@@ -258,6 +258,7 @@ public class ReservationService {
                 .id(reservation.getId())
                 .status(statusName)
                 .customerName(reservation.getCustomerName())
+                .customerId(reservation.getUser() != null ? reservation.getUser().getId() : null)
                 .phoneNumber(phone)
                 .customerEmail(customerEmail)
                 .address(reservation.getAddress())

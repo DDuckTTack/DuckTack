@@ -37,6 +37,7 @@ public class CompanyReservationController {
                 .map(r -> new ReservationResponse(
                         r.getId(),
                         r.getCustomerName(),
+                        r.getUser() != null ? r.getUser().getId() : null,
                         r.getIssueSummary(),
                         r.getVisitDate() != null ? r.getVisitDate().toString() : null,
                         r.getVisitTime() != null ? r.getVisitTime().toString() : null,

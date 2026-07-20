@@ -76,6 +76,20 @@ function CompanyPage() {
                 </button>
                 <button
                     type="button"
+                    style={styles.button}
+                    onClick={() => navigate("/company/community")}
+                >
+                    💬 커뮤니티
+                </button>
+                <button
+                    type="button"
+                    style={styles.button}
+                    onClick={() => navigate("/company/messages")}
+                >
+                    ✉️ 쪽지함
+                </button>
+                <button
+                    type="button"
                     style={styles.logoutBtn}
                     onClick={logout}
                 >

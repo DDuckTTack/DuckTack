@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "../../api/axios";
+import { getOrCreateConversation } from "../../api/messages";
 
 function extractData(responseData) {
     return responseData?.data ?? responseData;
@@ -17,6 +19,7 @@ function formatWon(value) {
 }
 
 function CompanyReservationsPage() {
+    const navigate = useNavigate();
     const [list, setList] = useState([]);
     const [selectedDate, setSelectedDate] = useState(todayString());
     const [loading, setLoading] = useState(false);
@@ -127,6 +130,19 @@ function CompanyReservationsPage() {
             }
         } finally {
             setSubmittingId(null);
+        }
+    };
+
+    const openMessageThread = async (customerId) => {
+        if (!customerId) {
+            alert("고객 계정 정보를 찾을 수 없어 쪽지를 보낼 수 없습니다.");
+            return;
+        }
+        try {
+            const conversation = await getOrCreateConversation({ targetUserId: customerId });
+            navigate(`/company/messages/${conversation.conversationId}`);
+        } catch (e) {
+            alert(e.response?.data?.message || "쪽지방을 열지 못했습니다.");
         }
     };
 
@@ -653,6 +669,23 @@ function CompanyReservationsPage() {
                                         노쇼
                                     </button>
                                 )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => openMessageThread(r.customerId)}
+                                    style={{
+                                        flex: 1,
+                                        padding: "11px",
+                                        borderRadius: "10px",
+                                        fontWeight: "800",
+                                        cursor: "pointer",
+                                        border: "1px solid #93C5FD",
+                                        backgroundColor: "#EFF6FF",
+                                        color: "#1D4ED8"
+                                    }}
+                                >
+                                    ✉️ 쪽지
+                                </button>
                             </div>
                         </div>
                     ))}

@@ -14,6 +14,7 @@ public class ReservationDetailResponse {
     private String status;
 
     private String customerName;
+    private Long customerId;
     private String phoneNumber;
     private String customerEmail;
     private String address;
