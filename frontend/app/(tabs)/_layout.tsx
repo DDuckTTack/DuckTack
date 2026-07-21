@@ -33,20 +33,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="histories"
+        name="community"
         options={{
-          title: "히스토리",
+          title: "커뮤니티",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} name="time" />
+            <TabIcon focused={focused} color={color} name="chatbubbles" />
           ),
         }}
       />
       <Tabs.Screen
-        name="mypage"
+        name="more"
         options={{
-          title: "마이페이지",
+          title: "더보기",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} name="person" />
+            <TabIcon focused={focused} color={color} name="menu" />
           ),
         }}
       />
