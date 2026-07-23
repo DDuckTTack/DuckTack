@@ -8,14 +8,16 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Modal,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { router, useLocalSearchParams, Stack } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
+import ReportModal from "../../src/components/ReportModal";
+import { getOrCreateConversation } from "../../src/api/message";
 import {
   getPost,
   getComments,
@@ -64,6 +66,17 @@ type ReportTarget = { type: ReportTargetType; id: number };
 
 export default function CommunityPostDetail() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
+  const insets = useSafeAreaInsets();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const [post, setPost] = useState<PostDetail | null>(null);
   const [comments, setComments] = useState<CommentItem[]>([]);
@@ -209,6 +222,21 @@ export default function CommunityPostDetail() {
     ]);
   }
 
+  async function messageUser(targetUserId: number | string) {
+    try {
+      const conversation = await getOrCreateConversation({ targetUserId });
+      router.push(`/messages/${conversation.conversationId}`);
+    } catch (e: any) {
+      console.log("쪽지 생성 실패:", e);
+      Alert.alert("쪽지 보내기 실패", e?.response?.data?.message || "다시 시도해주세요.");
+    }
+  }
+
+  function handleMessageAuthor() {
+    if (!post) return;
+    messageUser(post.authorId);
+  }
+
   function openReport(target: ReportTarget) {
     setReportReason("SPAM");
     setReportDetail("");
@@ -292,7 +320,7 @@ export default function CommunityPostDetail() {
         <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+            keyboardVerticalOffset={0}
         >
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* 게시글 본문 */}
@@ -311,11 +339,20 @@ export default function CommunityPostDetail() {
 
               <Text style={styles.postTitle}>{post.title}</Text>
 
-              <View style={styles.postMetaRow}>
-                <Text style={styles.postMetaText}>
-                  {post.authorName} · {formatDate(post.createdAt)}
-                </Text>
-                <Text style={styles.postMetaText}>조회 {post.viewCount}</Text>
+              <View style={styles.postMetaBlock}>
+                <View style={styles.postAuthorRow}>
+                  <Text style={styles.postAuthorText}>{post.authorName}</Text>
+                  {!post.editable && (
+                      <Pressable onPress={handleMessageAuthor} style={styles.authorMessageBtn} hitSlop={8}>
+                        <Feather name="mail" size={13} color={C.primary} />
+                        <Text style={styles.authorMessageBtnText}>쪽지</Text>
+                      </Pressable>
+                  )}
+                </View>
+                <View style={styles.postSubMetaRow}>
+                  <Text style={styles.postMetaText}>{formatDate(post.createdAt)}</Text>
+                  <Text style={styles.postMetaText}>조회 {post.viewCount}</Text>
+                </View>
               </View>
 
               <Text style={styles.postContent}>{post.content}</Text>
@@ -398,13 +435,22 @@ export default function CommunityPostDetail() {
                                     </Pressable>
                                   </>
                               ) : (
-                                  <Pressable
-                                      onPress={() => openReport({ type: "COMMENT", id: c.commentId })}
-                                      style={styles.commentActionBtn}
-                                  >
-                                    <Feather name="flag" size={12} color={C.sub} />
-                                    <Text style={styles.commentActionText}>신고</Text>
-                                  </Pressable>
+                                  <>
+                                    <Pressable
+                                        onPress={() => messageUser(c.authorId)}
+                                        style={styles.commentActionBtn}
+                                    >
+                                      <Feather name="mail" size={12} color={C.primary} />
+                                      <Text style={[styles.commentActionText, { color: C.primary }]}>쪽지</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={() => openReport({ type: "COMMENT", id: c.commentId })}
+                                        style={styles.commentActionBtn}
+                                    >
+                                      <Feather name="flag" size={12} color={C.sub} />
+                                      <Text style={styles.commentActionText}>신고</Text>
+                                    </Pressable>
+                                  </>
                               )}
                             </View>
                           </View>
@@ -418,7 +464,12 @@ export default function CommunityPostDetail() {
           </ScrollView>
 
           {/* 댓글 입력바 */}
-          <View style={styles.commentInputBar}>
+          <View
+              style={[
+                styles.commentInputBar,
+                { paddingBottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12) },
+              ]}
+          >
             {editingCommentId && (
                 <Pressable onPress={cancelEditComment} style={styles.cancelEditBtn}>
                   <Text style={styles.cancelEditText}>취소</Text>
@@ -448,64 +499,18 @@ export default function CommunityPostDetail() {
         </KeyboardAvoidingView>
 
         {/* 신고 모달 */}
-        <Modal
+        <ReportModal
             visible={reportTarget !== null}
-            animationType="slide"
-            transparent
-            statusBarTranslucent
-            onRequestClose={closeReport}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalSheet}>
-              <Text style={styles.modalTitle}>신고하기</Text>
-              <Text style={styles.modalSub}>신고 사유를 선택해주세요.</Text>
-
-              <View style={{ gap: 8, marginTop: 14 }}>
-                {REPORT_REASON_ORDER.map((reason) => (
-                    <Pressable
-                        key={reason}
-                        onPress={() => setReportReason(reason)}
-                        style={styles.reasonRow}
-                    >
-                      <View style={[styles.radioOuter, reportReason === reason && styles.radioOuterActive]}>
-                        {reportReason === reason && <View style={styles.radioInner} />}
-                      </View>
-                      <Text style={styles.reasonText}>{REPORT_REASON_LABELS[reason]}</Text>
-                    </Pressable>
-                ))}
-              </View>
-
-              {reportReason === "OTHER" && (
-                  <TextInput
-                      style={styles.modalDetailInput}
-                      placeholder="상세 사유를 입력해주세요 (선택)"
-                      placeholderTextColor="#94A3B8"
-                      value={reportDetail}
-                      onChangeText={setReportDetail}
-                      maxLength={500}
-                      multiline
-                  />
-              )}
-
-              <View style={styles.modalBtnRow}>
-                <Pressable style={styles.modalCancelBtn} onPress={closeReport}>
-                  <Text style={styles.modalCancelText}>취소</Text>
-                </Pressable>
-                <Pressable
-                    style={[styles.modalSubmitBtn, reportSubmitting && { opacity: 0.6 }]}
-                    onPress={handleSubmitReport}
-                    disabled={reportSubmitting}
-                >
-                  {reportSubmitting ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                      <Text style={styles.modalSubmitText}>신고하기</Text>
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
+            reasonOrder={REPORT_REASON_ORDER}
+            reasonLabels={REPORT_REASON_LABELS}
+            selectedReason={reportReason}
+            onSelectReason={setReportReason}
+            detail={reportDetail}
+            onChangeDetail={setReportDetail}
+            submitting={reportSubmitting}
+            onCancel={closeReport}
+            onSubmit={handleSubmitReport}
+        />
       </SafeAreaView>
   );
 }
@@ -566,8 +571,23 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 11, color: C.sub, fontWeight: "600" },
 
   postTitle: { fontSize: 19, fontWeight: "900", color: C.text, lineHeight: 26 },
-  postMetaRow: { flexDirection: "row", justifyContent: "space-between" },
+  postMetaBlock: { gap: 4 },
   postMetaText: { fontSize: 12, color: "#94A3B8" },
+  postAuthorRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  postAuthorText: { fontSize: 13, fontWeight: "700", color: C.text },
+  postSubMetaRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  authorMessageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: C.primaryBg,
+    borderWidth: 1,
+    borderColor: C.primaryDim,
+  },
+  authorMessageBtnText: { fontSize: 11, fontWeight: "700", color: C.primary },
   postContent: { fontSize: 15, color: "#334155", lineHeight: 23 },
 
   postActionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 },
@@ -649,58 +669,4 @@ const styles = StyleSheet.create({
   },
 
   emptyBox: { flex: 1, alignItems: "center", justifyContent: "center" },
-
-  modalOverlay: { flex: 1, backgroundColor: "rgba(15,23,42,0.45)", justifyContent: "flex-end" },
-  modalSheet: {
-    backgroundColor: C.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 22,
-    paddingBottom: 32,
-  },
-  modalTitle: { fontSize: 17, fontWeight: "800", color: C.text },
-  modalSub: { fontSize: 13, color: C.sub, marginTop: 4 },
-  reasonRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
-  radioOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioOuterActive: { borderColor: C.primary },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
-  reasonText: { fontSize: 14, color: C.text, fontWeight: "600" },
-  modalDetailInput: {
-    marginTop: 12,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 14,
-    padding: 12,
-    fontSize: 13,
-    color: C.text,
-    minHeight: 70,
-  },
-  modalBtnRow: { flexDirection: "row", gap: 10, marginTop: 20 },
-  modalCancelBtn: {
-    flex: 1,
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalCancelText: { fontSize: 14, fontWeight: "700", color: C.sub },
-  modalSubmitBtn: {
-    flex: 2,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: C.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalSubmitText: { color: "#fff", fontSize: 14, fontWeight: "800" },
 });
