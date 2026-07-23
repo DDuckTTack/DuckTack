@@ -4,6 +4,7 @@ import com.example.backend1.company.domain.Company;
 import com.example.backend1.company.repo.CompanyRepository;
 import com.example.backend1.company.unavailable.repository.CompanyUnavailableDateRepository;
 import com.example.backend1.company.unavailable.repository.CompanyUnavailableTimeRepository;
+import com.example.backend1.coupon.service.CouponService;
 import com.example.backend1.history.repo.HistoryRepository;
 import com.example.backend1.history.service.HistoryEntity;
 import com.example.backend1.reservation.domain.Reservation;
@@ -41,6 +42,7 @@ public class ReservationService {
     private final CompanyUnavailableTimeRepository timeRepo;
     private final UserRepository userRepository;
     private final HistoryRepository historyRepository;
+    private final CouponService couponService;
 
     public ReservationService(
             ReservationRepository reservationRepo,
@@ -48,7 +50,8 @@ public class ReservationService {
             CompanyUnavailableDateRepository dateRepo,
             CompanyUnavailableTimeRepository timeRepo,
             UserRepository userRepository,
-            HistoryRepository historyRepository
+            HistoryRepository historyRepository,
+            CouponService couponService
     ) {
         this.reservationRepo = reservationRepo;
         this.companyRepo = companyRepo;
@@ -56,6 +59,7 @@ public class ReservationService {
         this.timeRepo = timeRepo;
         this.userRepository = userRepository;
         this.historyRepository = historyRepository;
+        this.couponService = couponService;
     }
 
     public void create(ReservationRequest req, Authentication auth) {
@@ -348,6 +352,12 @@ public class ReservationService {
         );
 
         reservationRepo.save(reservation);
+
+        couponService.issueRepeatVisitCouponIfEligible(
+                reservation.getUser(),
+                reservation.getCompany(),
+                reservation.getId()
+        );
     }
 
     public void rejectReservation(Long id, Long companyId, String reason) {

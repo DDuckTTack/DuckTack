@@ -29,7 +29,9 @@ public enum ErrorCode {
   COMPANY_HAS_NO_ACCOUNT(HttpStatus.NOT_FOUND, "COMPANY_HAS_NO_ACCOUNT", "이 업체는 아직 쪽지를 받을 수 있는 계정이 없습니다."),
   CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "대화를 찾을 수 없습니다."),
   MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_NOT_FOUND", "메시지를 찾을 수 없습니다."),
-  MESSAGE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_REPORT_NOT_FOUND", "신고 내역을 찾을 수 없습니다.");
+  MESSAGE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_REPORT_NOT_FOUND", "신고 내역을 찾을 수 없습니다."),
+  COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "COUPON_NOT_FOUND", "쿠폰을 찾을 수 없습니다."),
+  COUPON_ALREADY_USED(HttpStatus.CONFLICT, "COUPON_ALREADY_USED", "이미 사용한 쿠폰입니다.");
   private final HttpStatus status;
   private final String code;
   private final String message;

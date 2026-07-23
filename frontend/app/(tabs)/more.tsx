@@ -3,6 +3,8 @@ import { router, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
+import { MORE_MENU_ITEMS } from "../../src/constants/moreMenu";
+
 const C = {
   primary: "#4F46E5",
   text: "#0F172A",
@@ -11,11 +13,6 @@ const C = {
   bg: "#F8FAFC",
   card: "#FFFFFF",
 };
-
-const MENU_ITEMS = [
-  { key: "histories", label: "히스토리", icon: "time-outline" as const, path: "/histories" as const },
-  { key: "mypage", label: "마이페이지", icon: "person-outline" as const, path: "/mypage" as const },
-];
 
 export default function MoreScreen() {
   return (
@@ -27,7 +24,7 @@ export default function MoreScreen() {
         </View>
 
         <View style={styles.menuList}>
-          {MENU_ITEMS.map((item) => (
+          {MORE_MENU_ITEMS.map((item) => (
               <Pressable
                   key={item.key}
                   style={styles.menuRow}

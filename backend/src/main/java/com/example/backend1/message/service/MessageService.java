@@ -85,18 +85,18 @@ public class MessageService {
         User me = userRepository.findByUsername(myUsername)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        UserRole role = parseRoleFilter(type);
+        Boolean companyOnly = parseCompanyFilter(type);
 
-        return conversationRepository.findMyConversations(me.getId(), role, pageable)
+        return conversationRepository.findMyConversations(me.getId(), companyOnly, pageable)
                 .map(c -> toItem(c, me.getId()));
     }
 
-    private UserRole parseRoleFilter(String type) {
+    private Boolean parseCompanyFilter(String type) {
         if (type == null || type.isBlank()) return null;
 
         return switch (type.trim().toUpperCase()) {
-            case "COMPANY" -> UserRole.COMPANY;
-            case "USER" -> UserRole.USER;
+            case "COMPANY" -> true;
+            case "USER" -> false;
             default -> null;
         };
     }

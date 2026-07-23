@@ -18,6 +18,7 @@ import {
   VENDOR_REGIONS,
 } from "../src/api/experts";
 import { requestCurrentCoordinates, type Coordinates } from "../src/utils/location";
+import { getOrCreateConversation } from "../src/api/message";
 
 const MAIN_BLUE = "#4F46E5";
 
@@ -116,6 +117,18 @@ async function openPlaceUrl(placeUrl?: string | null) {
 
 function isPartnerVendor(vendor: ExpertVendor) {
   return vendor.isPartner === true && !!vendor.companyId;
+}
+
+async function messageVendor(vendor: ExpertVendor) {
+  if (!vendor.companyId) return;
+
+  try {
+    const conversation = await getOrCreateConversation({ targetCompanyId: vendor.companyId });
+    router.push(`/messages/${conversation.conversationId}`);
+  } catch (e: any) {
+    console.log("업체 쪽지 생성 실패:", e);
+    Alert.alert("쪽지 보내기 실패", e?.response?.data?.message || "다시 시도해주세요.");
+  }
 }
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -720,29 +733,36 @@ export default function Expert() {
                             ) : null}
 
                             {partner ? (
-                                <Pressable
-                                    onPress={() =>
-                                        router.push({
-                                          pathname: "/expert-booking",
-                                          params: {
-                                            historyId: historyId ? String(historyId) : undefined,
-                                            vendorId: vendor.companyId,
-                                            companyId: vendor.companyId,
-                                            vendorName: vendor.name,
-                                            vendorPhone: vendor.phone,
-                                            vendorIntro: vendor.intro,
-                                            vendorMinPrice: String(vendor.minPrice),
-                                            issueType: resolvedIssueType,
-                                            riskScore: resolvedRiskScore != null ? String(resolvedRiskScore) : undefined,
-                                            areaRatio: resolvedAreaRatio != null ? String(resolvedAreaRatio) : undefined,
-                                          },
-                                        })
-                                    }
-                                    style={styles.bookBtn}
-                                >
-                                  <Text style={styles.bookBtnText}>예약 페이지로 이동</Text>
-                                  <Feather name="chevron-right" size={16} color="#fff" />
-                                </Pressable>
+                                <View style={styles.partnerActions}>
+                                  <Pressable onPress={() => messageVendor(vendor)} style={styles.messageBtn}>
+                                    <Feather name="mail" size={15} color={MAIN_BLUE} />
+                                    <Text style={styles.messageBtnText}>쪽지 보내기</Text>
+                                  </Pressable>
+
+                                  <Pressable
+                                      onPress={() =>
+                                          router.push({
+                                            pathname: "/expert-booking",
+                                            params: {
+                                              historyId: historyId ? String(historyId) : undefined,
+                                              vendorId: vendor.companyId,
+                                              companyId: vendor.companyId,
+                                              vendorName: vendor.name,
+                                              vendorPhone: vendor.phone,
+                                              vendorIntro: vendor.intro,
+                                              vendorMinPrice: String(vendor.minPrice),
+                                              issueType: resolvedIssueType,
+                                              riskScore: resolvedRiskScore != null ? String(resolvedRiskScore) : undefined,
+                                              areaRatio: resolvedAreaRatio != null ? String(resolvedAreaRatio) : undefined,
+                                            },
+                                          })
+                                      }
+                                      style={[styles.bookBtn, { flex: 1 }]}
+                                  >
+                                    <Text style={styles.bookBtnText}>예약 페이지로 이동</Text>
+                                    <Feather name="chevron-right" size={16} color="#fff" />
+                                  </Pressable>
+                                </View>
                             ) : (
                                 <View style={styles.externalActions}>
                                   <Pressable onPress={() => callVendor(vendor.phone)} style={styles.callBtn}>
@@ -1014,6 +1034,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  partnerActions: { flexDirection: "row", gap: 8 },
   bookBtn: {
     backgroundColor: "#1e293b",
     height: 48,
@@ -1024,6 +1045,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   bookBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  messageBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: MAIN_BLUE,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  messageBtnText: { color: MAIN_BLUE, fontSize: 14, fontWeight: "700" },
 
   externalActions: { flexDirection: "row", gap: 8 },
   callBtn: {
