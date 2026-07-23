@@ -31,7 +31,8 @@ public enum ErrorCode {
   MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_NOT_FOUND", "메시지를 찾을 수 없습니다."),
   MESSAGE_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "MESSAGE_REPORT_NOT_FOUND", "신고 내역을 찾을 수 없습니다."),
   COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "COUPON_NOT_FOUND", "쿠폰을 찾을 수 없습니다."),
-  COUPON_ALREADY_USED(HttpStatus.CONFLICT, "COUPON_ALREADY_USED", "이미 사용한 쿠폰입니다.");
+  COUPON_ALREADY_USED(HttpStatus.CONFLICT, "COUPON_ALREADY_USED", "이미 사용한 쿠폰입니다."),
+  SUPPORT_THREAD_NOT_FOUND(HttpStatus.NOT_FOUND, "SUPPORT_THREAD_NOT_FOUND", "문의 채팅방을 찾을 수 없습니다.");
   private final HttpStatus status;
   private final String code;
   private final String message;
