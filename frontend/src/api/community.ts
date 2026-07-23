@@ -19,7 +19,7 @@ export const BOARD_TYPE_LABELS: Record<BoardType, string> = {
   QNA: "Q&A",
 };
 
-export const BOARD_TYPE_ORDER: BoardType[] = ["FREE", "LOCAL", "PROMOTION", "DIY_REVIEW", "QNA"];
+export const BOARD_TYPE_ORDER: BoardType[] = ["FREE", "LOCAL", "DIY_REVIEW", "PROMOTION", "QNA"];
 
 export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
   SPAM: "스팸/도배",
@@ -38,9 +38,6 @@ export const REPORT_REASON_ORDER: ReportReason[] = [
   "PERSONAL_INFORMATION",
   "OTHER",
 ];
-
-// LOCAL 게시판은 현재 "경기대학교 주변" 1개 지역만 지원합니다.
-export const FIXED_LOCAL_REGION = { regionCode: "KYONGGI_UNIV", regionName: "경기대학교 주변" };
 
 export type PostListItem = {
   id: number;
@@ -73,6 +70,7 @@ export type CommentItem = {
   commentId: number;
   postId: number;
   content: string;
+  authorId: number | string;
   authorName: string;
   createdAt: string;
   updatedAt: string;

@@ -21,6 +21,7 @@ import {
   PostListItem,
   SortOption,
 } from "../../src/api/community";
+import RegionPicker from "../../src/components/RegionPicker";
 
 const C = {
   primary: "#4F46E5",
@@ -57,6 +58,8 @@ export default function CommunityBoard() {
   const [sort, setSort] = useState<SortOption>("latest");
   const [keyword, setKeyword] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
+  const [region, setRegion] = useState<{ regionCode: string; regionName: string } | null>(null);
+  const [regionPickerVisible, setRegionPickerVisible] = useState(false);
 
   async function load(reset: boolean) {
     try {
@@ -66,6 +69,7 @@ export default function CommunityBoard() {
       const result = await listPosts({
         boardType: selectedBoard === "ALL" ? undefined : selectedBoard,
         keyword: submittedKeyword || undefined,
+        regionCode: selectedBoard === "LOCAL" ? region?.regionCode : undefined,
         page: targetPage,
         sort,
       });
@@ -82,9 +86,14 @@ export default function CommunityBoard() {
   }
 
   useEffect(() => {
+    if (selectedBoard !== "LOCAL") setRegion(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBoard]);
+
+  useEffect(() => {
     load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBoard, sort, submittedKeyword]);
+  }, [selectedBoard, sort, submittedKeyword, region]);
 
   function handleSearchSubmit() {
     setSubmittedKeyword(keyword.trim());
@@ -130,6 +139,22 @@ export default function CommunityBoard() {
             </Pressable>
         ))}
       </ScrollView>
+
+      {/* 지역 필터 (지역별 게시판일 때만) */}
+      {selectedBoard === "LOCAL" && (
+          <View style={styles.regionFilterRow}>
+            <Pressable style={styles.regionFilterBtn} onPress={() => setRegionPickerVisible(true)}>
+              <Feather name="map-pin" size={13} color={C.primary} />
+              <Text style={styles.regionFilterText}>{region ? region.regionName : "전체 지역"}</Text>
+              <Feather name="chevron-down" size={13} color={C.primary} />
+            </Pressable>
+            {region && (
+                <Pressable onPress={() => setRegion(null)} style={styles.regionClearBtn} hitSlop={8}>
+                  <Text style={styles.regionClearText}>전체보기</Text>
+                </Pressable>
+            )}
+          </View>
+      )}
 
       {/* 검색바 */}
       <View style={styles.searchRow}>
@@ -260,6 +285,15 @@ export default function CommunityBoard() {
       >
         <Feather name="edit-2" size={20} color="#fff" />
       </Pressable>
+
+      <RegionPicker
+          visible={regionPickerVisible}
+          onClose={() => setRegionPickerVisible(false)}
+          onSelect={(selected) => {
+            setRegion(selected);
+            setRegionPickerVisible(false);
+          }}
+      />
     </SafeAreaView>
   );
 }
@@ -315,6 +349,28 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
   chipText: { fontSize: 13, fontWeight: "700", color: C.sub },
   chipTextActive: { color: "#fff" },
+
+  regionFilterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 20,
+    marginTop: 12,
+  },
+  regionFilterBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: C.primaryBg,
+    borderWidth: 1,
+    borderColor: C.primaryDim,
+  },
+  regionFilterText: { fontSize: 12, fontWeight: "700", color: C.primary },
+  regionClearBtn: { paddingVertical: 6 },
+  regionClearText: { fontSize: 12, fontWeight: "700", color: C.sub },
 
   searchRow: {
     flexDirection: "row",

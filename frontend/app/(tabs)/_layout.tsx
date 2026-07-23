@@ -1,56 +1,71 @@
+import { useState } from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Platform, StyleSheet } from "react-native";
 
+import MoreDrawer from "../../src/components/MoreDrawer";
+
 export default function TabsLayout() {
+  const [moreOpen, setMoreOpen] = useState(false);
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: "#4F46E5",
-        tabBarInactiveTintColor: "#94a3b8",
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "홈",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} name="home" />
-          ),
+    <View style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarHideOnKeyboard: true,
+          tabBarActiveTintColor: "#4F46E5",
+          tabBarInactiveTintColor: "#94a3b8",
+          tabBarStyle: styles.tabBar,
+          tabBarLabelStyle: styles.tabBarLabel,
         }}
-      />
-      <Tabs.Screen
-        name="upload"
-        options={{
-          title: "진단",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} name="camera" />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          title: "커뮤니티",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} name="chatbubbles" />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: "더보기",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon focused={focused} color={color} name="menu" />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "홈",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon focused={focused} color={color} name="home" />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="upload"
+          options={{
+            title: "진단",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon focused={focused} color={color} name="camera" />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="community"
+          options={{
+            title: "커뮤니티",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon focused={focused} color={color} name="chatbubbles" />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: "더보기",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon focused={focused} color={color} name="menu" />
+            ),
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              setMoreOpen(true);
+            },
+          }}
+        />
+      </Tabs>
+
+      <MoreDrawer visible={moreOpen} onClose={() => setMoreOpen(false)} />
+    </View>
   );
 }
 

@@ -19,9 +19,9 @@ import {
   getPost,
   BOARD_TYPE_LABELS,
   BOARD_TYPE_ORDER,
-  FIXED_LOCAL_REGION,
   BoardType,
 } from "../../src/api/community";
+import RegionPicker from "../../src/components/RegionPicker";
 
 const C = {
   primary: "#4F46E5",
@@ -49,6 +49,8 @@ export default function CommunityWrite() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [productName, setProductName] = useState("");
+  const [region, setRegion] = useState<{ regionCode: string; regionName: string } | null>(null);
+  const [regionPickerVisible, setRegionPickerVisible] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
 
@@ -62,6 +64,9 @@ export default function CommunityWrite() {
         setTitle(post.title);
         setContent(post.content);
         setProductName(post.productName || "");
+        if (post.regionCode && post.regionName) {
+          setRegion({ regionCode: post.regionCode, regionName: post.regionName });
+        }
       } catch (e) {
         console.log("게시글 조회 실패:", e);
         Alert.alert("불러오기 실패", "게시글 정보를 가져오지 못했습니다.");
@@ -77,6 +82,7 @@ export default function CommunityWrite() {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
     if (!isEdit && !boardType) return "게시판을 선택해주세요.";
+    if (boardType === "LOCAL" && !region) return "지역을 선택해주세요.";
     if (trimmedTitle.length === 0) return "제목을 입력해주세요.";
     if (trimmedTitle.length > 100) return "제목은 100자 이하로 입력해주세요.";
     if (trimmedContent.length === 0) return "내용을 입력해주세요.";
@@ -96,7 +102,7 @@ export default function CommunityWrite() {
       boardType,
       title: title.trim(),
       content: content.trim(),
-      ...(boardType === "LOCAL" ? FIXED_LOCAL_REGION : {}),
+      ...(boardType === "LOCAL" && region ? region : {}),
       ...(boardType === "DIY_REVIEW" && productName.trim()
           ? { productName: productName.trim() }
           : {}),
@@ -170,10 +176,13 @@ export default function CommunityWrite() {
           )}
 
           {boardType === "LOCAL" && (
-              <View style={styles.regionNotice}>
+              <Pressable style={styles.regionNotice} onPress={() => setRegionPickerVisible(true)}>
                 <Feather name="map-pin" size={14} color={C.primary} />
-                <Text style={styles.regionNoticeText}>지역: {FIXED_LOCAL_REGION.regionName}</Text>
-              </View>
+                <Text style={styles.regionNoticeText}>
+                  {region ? `지역: ${region.regionName}` : "지역을 선택해주세요"}
+                </Text>
+                <Feather name="chevron-right" size={14} color={C.primary} style={{ marginLeft: "auto" }} />
+              </Pressable>
           )}
 
           <View style={styles.section}>
@@ -232,6 +241,15 @@ export default function CommunityWrite() {
 
           <View style={{ height: 40 }} />
         </ScrollView>
+
+        <RegionPicker
+            visible={regionPickerVisible}
+            onClose={() => setRegionPickerVisible(false)}
+            onSelect={(selected) => {
+              setRegion(selected);
+              setRegionPickerVisible(false);
+            }}
+        />
       </SafeAreaView>
   );
 }
