@@ -34,6 +34,11 @@ function AdminLayout() {
             label: "커뮤니티 관리",
             icon: "💬",
             path: "/admin/community"
+        },
+        {
+            label: "고객센터",
+            icon: "🎧",
+            path: "/admin/support"
         }
     ];
 

@@ -28,6 +28,8 @@ import ReservationsPage from "./pages/admin/ReservationsPage";
 import ProductsPage from "./pages/admin/ProductsPage";
 import AdminReviewsPage from "./pages/admin/AdminReviewsPage";
 import AdminCommunityPage from "./pages/admin/AdminCommunityPage";
+import AdminSupportInboxPage from "./pages/admin/AdminSupportInboxPage";
+import AdminSupportThreadPage from "./pages/admin/AdminSupportThreadPage";
 import AdminLayout from "./pages/admin/AdminLayout";
 
 // route 보호
@@ -126,6 +128,16 @@ function App() {
                     <Route
                         path="community"
                         element={<AdminCommunityPage />}
+                    />
+
+                    <Route
+                        path="support"
+                        element={<AdminSupportInboxPage />}
+                    />
+
+                    <Route
+                        path="support/:threadId"
+                        element={<AdminSupportThreadPage />}
                     />
                 </Route>
             </Routes>
