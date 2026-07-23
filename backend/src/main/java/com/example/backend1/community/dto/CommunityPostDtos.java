@@ -76,6 +76,7 @@ public class CommunityPostDtos {
             Long commentId,
             Long postId,
             String content,
+            Long authorId,
             String authorName,
             OffsetDateTime createdAt,
             OffsetDateTime updatedAt,

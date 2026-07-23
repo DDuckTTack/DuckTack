@@ -84,4 +84,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             LocalDate start,
             LocalDate end
     );
+
+    /**
+     * 재방문 쿠폰 발급 대상 판단용.
+     * 이번에 완료 처리하는 예약(excludeId)을 제외하고, 동일 유저+업체로 이미 완료(DONE)된
+     * 예약이 있었는지 확인한다.
+     */
+    boolean existsByUserIdAndCompanyIdAndStatusAndIdNot(
+            Long userId,
+            Long companyId,
+            Reservation.Status status,
+            Long excludeId
+    );
 }

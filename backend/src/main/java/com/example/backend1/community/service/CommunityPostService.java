@@ -394,6 +394,7 @@ public class CommunityPostService {
                 comment.getId(),
                 comment.getPost().getId(),
                 comment.getContent(),
+                comment.getAuthor().getId(),
                 comment.getAuthor().getUsername(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
