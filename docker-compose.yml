@@ -33,19 +33,24 @@ services:
       AI_RETRY_DELAY_MS: ${AI_RETRY_DELAY_MS:-300}
       AI_RETRY_MULTIPLIER: ${AI_RETRY_MULTIPLIER:-2.0}
       STORAGE_LOCAL_ROOT: /data/storage
-      STORAGE_PUBLIC_BASE_URL: http://192.168.0.38:8080
+      STORAGE_PUBLIC_BASE_URL: http://192.168.1.103:8080
       AI_BASE_URL: http://ai-server:5000
       YOLO_BASE_URL: http://ai-server:5000
+      MODERATION_BASE_URL: http://moderation-server:5000
+      MODERATION_ENABLED: ${MODERATION_ENABLED:-true}
+      MODERATION_FAIL_OPEN: ${MODERATION_FAIL_OPEN:-true}
       LLM_API_KEY: ${LLM_API_KEY}
       LLM_MODEL: ${LLM_MODEL:-gemini-2.0-flash}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-8192}
     ports:
-      - "8081:8080"
+      - "8080:8080"
     volumes:
       - backend_storage:/data/storage
     depends_on:
       db:
         condition: service_healthy
+      moderation-server:
+        condition: service_started
 
   ai-server:
     build:
@@ -54,6 +59,16 @@ services:
       - "5001:5000"
     volumes:
       - ./ai-server/sam_vit_b.pth:/app/sam_vit_b.pth
+
+  moderation-server:
+    build:
+      context: ./moderation-server
+    ports:
+      - "5002:5000"
+    environment:
+      MODERATION_MODEL_NAME: ${MODERATION_MODEL_NAME:-jinkyeongk/kcELECTRA-toxic-detector}
+      MODERATION_THRESHOLD: ${MODERATION_THRESHOLD:-0.85}
+      MODERATION_TOXIC_LABEL_ID: ${MODERATION_TOXIC_LABEL_ID:-1}
 
 volumes:
   pgdata:

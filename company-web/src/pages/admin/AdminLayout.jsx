@@ -39,6 +39,11 @@ function AdminLayout() {
             label: "고객센터",
             icon: "🎧",
             path: "/admin/support"
+        },
+        {
+            label: "커뮤니티 신고함",
+            icon: "🚨",
+            path: "/admin/community-reports"
         }
     ];
 

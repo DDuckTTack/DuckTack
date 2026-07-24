@@ -41,4 +41,30 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
 
     @EntityGraph(attributePaths = "author")
     Optional<CommunityPost> findByIdAndStatus(Long id, CommunityStatus status);
+
+    @EntityGraph(attributePaths = "author")
+    Page<CommunityPost> findByAuthorIdAndStatusOrderByCreatedAtDesc(
+            Long authorId,
+            CommunityStatus status,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = "author")
+    @Query("""
+            select p
+            from CommunityPost p
+            where p.status = :status
+              and exists (
+                  select c.id
+                  from CommunityComment c
+                  where c.post = p
+                    and c.author.id = :authorId
+              )
+            order by p.createdAt desc
+            """)
+    Page<CommunityPost> findCommentedPostsByAuthor(
+            @Param("authorId") Long authorId,
+            @Param("status") CommunityStatus status,
+            Pageable pageable
+    );
 }

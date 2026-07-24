@@ -58,6 +58,10 @@ export function reportContent({ targetType, targetId, reason, detail }) {
         .then(unwrap);
 }
 
+export function listCommunityReports({ page = 0, size = 20 } = {}) {
+    return axios.get("/api/admin/community-reports", { params: { page, size } }).then(unwrap);
+}
+
 export const BOARD_TYPES = [
     { value: "FREE", label: "자유게시판" },
     { value: "LOCAL", label: "지역별 커뮤니티" },
@@ -74,6 +78,10 @@ export const REPORT_REASONS = [
     { value: "PERSONAL_INFORMATION", label: "개인정보 노출" },
     { value: "OTHER", label: "기타" },
 ];
+
+export function reportReasonLabel(value) {
+    return REPORT_REASONS.find((reason) => reason.value === value)?.label ?? value;
+}
 
 export function boardTypeLabel(value) {
     return BOARD_TYPES.find((b) => b.value === value)?.label ?? value;

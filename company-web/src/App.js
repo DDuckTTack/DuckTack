@@ -30,6 +30,7 @@ import AdminReviewsPage from "./pages/admin/AdminReviewsPage";
 import AdminCommunityPage from "./pages/admin/AdminCommunityPage";
 import AdminSupportInboxPage from "./pages/admin/AdminSupportInboxPage";
 import AdminSupportThreadPage from "./pages/admin/AdminSupportThreadPage";
+import AdminCommunityReportsPage from "./pages/admin/AdminCommunityReportsPage";
 import AdminLayout from "./pages/admin/AdminLayout";
 
 // route 보호
@@ -138,6 +139,11 @@ function App() {
                     <Route
                         path="support/:threadId"
                         element={<AdminSupportThreadPage />}
+                    />
+
+                    <Route
+                        path="community-reports"
+                        element={<AdminCommunityReportsPage />}
                     />
                 </Route>
             </Routes>

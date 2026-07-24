@@ -183,7 +183,7 @@ export default function AdminCommunityPage() {
         <div style={styles.page}>
             <h1 style={styles.title}>💬 커뮤니티 관리</h1>
             <div style={styles.subtitle}>
-                게시글을 클릭하면 신고 건수와 댓글을 확인하고 삭제할 수 있습니다. (개별 신고 사유 목록 API는 아직 없어 신고 건수만 표시됩니다.)
+                게시글을 선택해 상세 내용과 댓글을 확인하고 관리할 수 있습니다.
             </div>
 
             <div style={styles.toolbar}>

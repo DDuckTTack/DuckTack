@@ -89,6 +89,12 @@ ai:
 #    multipart-field 는 YOLO 측에서 수신할 form 필드 이름 (default: image)
 yolo:
   base-url: ${YOLO_BASE_URL:https://frostily-sworn-shifting.ngrok-free.dev}
+
+moderation:
+  enabled: ${MODERATION_ENABLED:true}
+  fail-open: ${MODERATION_FAIL_OPEN:true}
+  base-url: ${MODERATION_BASE_URL:http://moderation-server:5000}
+  path: /moderate
   api-key: ${YOLO_API_KEY:}
   multipart-field: ${YOLO_MULTIPART_FIELD:image}
 
@@ -117,7 +123,7 @@ llm:
 storage:
   local:
     root: ./storage
-    public-base-url: http://192.168.0.38:8080
+    public-base-url: http://192.168.1.103:8080
 
 report:
   share:

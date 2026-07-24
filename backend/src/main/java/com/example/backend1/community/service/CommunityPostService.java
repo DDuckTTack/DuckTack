@@ -10,6 +10,7 @@ import com.example.backend1.community.domain.CommunityReport;
 import com.example.backend1.community.domain.CommunityStatus;
 import com.example.backend1.community.domain.ReportTargetType;
 import com.example.backend1.community.dto.CommunityPostDtos;
+import com.example.backend1.community.moderation.ContentModerationService;
 import com.example.backend1.community.repo.CommunityCommentRepository;
 import com.example.backend1.community.repo.CommunityPostLikeRepository;
 import com.example.backend1.community.repo.CommunityPostRepository;
@@ -37,6 +38,7 @@ public class CommunityPostService {
     private final CommunityReportRepository communityReportRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final ContentModerationService contentModerationService;
 
     public CommunityPostService(
             CommunityPostRepository communityPostRepository,
@@ -44,7 +46,8 @@ public class CommunityPostService {
             CommunityPostLikeRepository communityPostLikeRepository,
             CommunityReportRepository communityReportRepository,
             UserRepository userRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            ContentModerationService contentModerationService
     ) {
         this.communityPostRepository = communityPostRepository;
         this.communityCommentRepository = communityCommentRepository;
@@ -52,6 +55,7 @@ public class CommunityPostService {
         this.communityReportRepository = communityReportRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.contentModerationService = contentModerationService;
     }
 
     @Transactional(readOnly = true)
@@ -76,6 +80,24 @@ public class CommunityPostService {
                         pageable
                 )
                 .map(post -> toListResponse(post, username));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommunityPostDtos.PostListResponse> myPosts(int page, int size, Authentication authentication) {
+        User user = currentUser(authentication);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        return communityPostRepository
+                .findByAuthorIdAndStatusOrderByCreatedAtDesc(user.getId(), CommunityStatus.ACTIVE, pageable)
+                .map(post -> toListResponse(post, user.getUsername()));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommunityPostDtos.PostListResponse> myCommentedPosts(int page, int size, Authentication authentication) {
+        User user = currentUser(authentication);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        return communityPostRepository
+                .findCommentedPostsByAuthor(user.getId(), CommunityStatus.ACTIVE, pageable)
+                .map(post -> toListResponse(post, user.getUsername()));
     }
 
     @Transactional
@@ -109,6 +131,7 @@ public class CommunityPostService {
         User author = currentUser(authentication);
         CommunityPost post = getActivePost(postId);
         String content = requireLength(request.content(), "댓글", 1, 1000);
+        contentModerationService.validate(content);
 
         CommunityComment comment = communityCommentRepository.save(new CommunityComment(post, author, content));
         post.increaseCommentCount();
@@ -125,7 +148,9 @@ public class CommunityPostService {
         User currentUser = currentUser(authentication);
         CommunityComment comment = getComment(commentId);
         assertEditable(comment.getAuthor(), currentUser);
-        comment.update(requireLength(request.content(), "댓글", 1, 1000));
+        String content = requireLength(request.content(), "댓글", 1, 1000);
+        contentModerationService.validate(content);
+        comment.update(content);
         return toCommentResponse(comment, currentUser.getUsername());
     }
 
@@ -146,6 +171,7 @@ public class CommunityPostService {
         User author = currentUser(authentication);
         validatePost(request.boardType(), request.title(), request.content(),
                 request.regionCode(), request.regionName(), request.productName());
+        contentModerationService.validate(request.title().trim() + "\n" + request.content().trim());
 
         CommunityPost post = new CommunityPost(
                 author,
@@ -179,6 +205,7 @@ public class CommunityPostService {
         assertEditable(post, currentUser);
         validatePost(request.boardType(), request.title(), request.content(),
                 request.regionCode(), request.regionName(), request.productName());
+        contentModerationService.validate(request.title().trim() + "\n" + request.content().trim());
 
         post.update(
                 request.boardType(),
@@ -248,13 +275,17 @@ public class CommunityPostService {
         if (targetType == null || targetId == null || request.reason() == null) {
             throw new ApiException(ErrorCode.INVALID_INPUT);
         }
+        User targetAuthor;
         if (targetType == ReportTargetType.POST) {
-            getActivePost(targetId);
+            targetAuthor = getActivePost(targetId).getAuthor();
         } else {
-            getComment(targetId);
+            targetAuthor = getComment(targetId).getAuthor();
+        }
+        if (Objects.equals(targetAuthor.getId(), reporter.getId())) {
+            throw new ApiException(ErrorCode.INVALID_INPUT, "본인의 게시글이나 댓글은 신고할 수 없습니다.");
         }
         if (communityReportRepository.existsByTargetTypeAndTargetIdAndReporterId(targetType, targetId, reporter.getId())) {
-            throw new ApiException(ErrorCode.INVALID_INPUT, "이미 신고한 항목입니다.");
+            throw new ApiException(ErrorCode.COMMUNITY_REPORT_DUPLICATE);
         }
 
         CommunityReport report = communityReportRepository.save(new CommunityReport(
@@ -270,6 +301,59 @@ public class CommunityPostService {
                 report.getTargetType(),
                 report.getTargetId(),
                 report.getReason(),
+                report.getCreatedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CommunityPostDtos.AdminReportItem> listReports(Pageable pageable) {
+        return communityReportRepository.findAll(pageable).map(this::toAdminReportItem);
+    }
+
+    private CommunityPostDtos.AdminReportItem toAdminReportItem(CommunityReport report) {
+        Long postId = null;
+        User targetAuthor = null;
+        String authorName = "삭제된 콘텐츠";
+        String content = "삭제된 콘텐츠입니다.";
+
+        if (report.getTargetType() == ReportTargetType.POST) {
+            CommunityPost post = communityPostRepository.findById(report.getTargetId()).orElse(null);
+            if (post != null) {
+                postId = post.getId();
+                targetAuthor = post.getAuthor();
+                authorName = targetAuthor.getUsername();
+                content = post.getTitle() + "\n" + preview(post.getContent());
+            }
+        } else {
+            CommunityComment comment = communityCommentRepository.findById(report.getTargetId()).orElse(null);
+            if (comment != null) {
+                postId = comment.getPost().getId();
+                targetAuthor = comment.getAuthor();
+                authorName = targetAuthor.getUsername();
+                content = preview(comment.getContent());
+            }
+        }
+
+        return new CommunityPostDtos.AdminReportItem(
+                report.getId(),
+                report.getTargetType(),
+                report.getTargetId(),
+                postId,
+                targetAuthor != null ? targetAuthor.getId() : null,
+                authorName,
+                targetAuthor != null ? targetAuthor.getEmail() : null,
+                targetAuthor != null ? targetAuthor.getPhoneNumber() : null,
+                targetAuthor != null ? targetAuthor.getAddress() : null,
+                targetAuthor != null ? targetAuthor.getRole().name() : null,
+                content,
+                report.getReporter().getId(),
+                report.getReporter().getUsername(),
+                report.getReporter().getEmail(),
+                report.getReporter().getPhoneNumber(),
+                report.getReporter().getAddress(),
+                report.getReporter().getRole().name(),
+                report.getReason(),
+                report.getDetail(),
                 report.getCreatedAt()
         );
     }
