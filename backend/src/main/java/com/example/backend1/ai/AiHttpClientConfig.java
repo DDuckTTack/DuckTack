@@ -25,4 +25,12 @@ public class AiHttpClientConfig {
                 .setReadTimeout(Duration.ofSeconds(60))
                 .build();
     }
+
+    @Bean(name = "moderationRestTemplate")
+    public RestTemplate moderationRestTemplate(RestTemplateBuilder builder) {
+        return builder
+                .setConnectTimeout(Duration.ofSeconds(3))
+                .setReadTimeout(Duration.ofSeconds(20))
+                .build();
+    }
 }

@@ -106,4 +106,27 @@ public class CommunityPostDtos {
             ReportReason reason,
             OffsetDateTime createdAt
     ) {}
+
+    public record AdminReportItem(
+            Long reportId,
+            ReportTargetType targetType,
+            Long targetId,
+            Long postId,
+            Long targetAuthorId,
+            String targetAuthorName,
+            String targetAuthorEmail,
+            String targetAuthorPhone,
+            String targetAuthorAddress,
+            String targetAuthorRole,
+            String targetContent,
+            Long reporterId,
+            String reporterName,
+            String reporterEmail,
+            String reporterPhone,
+            String reporterAddress,
+            String reporterRole,
+            ReportReason reason,
+            String detail,
+            OffsetDateTime createdAt
+    ) {}
 }
