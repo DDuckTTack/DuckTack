@@ -507,6 +507,17 @@ export default function Result() {
     });
   }
 
+  function goBids() {
+    router.push({
+      pathname: "/bids" as any,
+      params: {
+        historyId: effectiveHistoryId,
+        imageUrl: data?.imageUrl,
+        issueType: effectiveIssueType,
+      },
+    });
+  }
+
   return (
       <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -679,6 +690,12 @@ export default function Result() {
                 <Text style={styles.choiceButtonText}>전문가 보기</Text>
               </Pressable>
             </View>
+            <Pressable
+                style={[styles.actionBtn, { backgroundColor: "#172033", marginTop: 12 }]}
+                onPress={goBids}
+            >
+              <Text style={styles.actionBtnText}>여러 업체에 입찰받기</Text>
+            </Pressable>
           </View>
 
           <View style={{ height: 40 }} />

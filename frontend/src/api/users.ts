@@ -17,12 +17,22 @@ export type Me = {
   residenceType: ResidenceType;
   rentType: RentType;
   address: string;
+  roadAddress?: string;
+  addressDetail?: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type UpdateMeRequest = {
   residenceType: ResidenceType;
   rentType: RentType;
   address: string;
+  roadAddress?: string;
+  addressDetail?: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 function normalizeMe(data: any): Me {
@@ -33,6 +43,11 @@ function normalizeMe(data: any): Me {
     residenceType: data?.residenceType,
     rentType: data?.rentType,
     address: data?.address ?? "",
+    roadAddress: data?.roadAddress ?? "",
+    addressDetail: data?.addressDetail ?? "",
+    postalCode: data?.postalCode ?? "",
+    latitude: data?.latitude == null ? undefined : Number(data.latitude),
+    longitude: data?.longitude == null ? undefined : Number(data.longitude),
   };
 }
 
@@ -48,6 +63,11 @@ export async function updateMe(req: UpdateMeRequest): Promise<Me> {
     residenceType: req.residenceType,
     rentType: req.rentType,
     address: req.address.trim(),
+    roadAddress: req.roadAddress?.trim(),
+    addressDetail: req.addressDetail?.trim(),
+    postalCode: req.postalCode?.trim(),
+    latitude: req.latitude,
+    longitude: req.longitude,
   });
   const body = res.data;
   const data = body?.data ?? body;

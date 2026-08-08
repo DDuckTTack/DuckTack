@@ -17,6 +17,8 @@ import ScreenState from "../src/components/ScreenState";
 import { clearAccessToken } from "../src/store/tokenStorage";
 import { openReportPdf, listMyReports, MyReportItem } from "../src/api/reports";
 import { getMe, updateMe, Me, ResidenceType, RentType } from "../src/api/users";
+import AddressSearchModal from "../src/components/AddressSearchModal";
+import {AddressResult} from "../src/api/addresses";
 
 const MAIN_BLUE = "#4F46E5";
 
@@ -119,6 +121,12 @@ export default function MyPage() {
   const [reports, setReports] = useState<MyReportItem[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [editAddress, setEditAddress] = useState("");
+  const [roadAddress, setRoadAddress] = useState("");
+  const [addressDetail, setAddressDetail] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [addressLat, setAddressLat] = useState<number | undefined>();
+  const [addressLng, setAddressLng] = useState<number | undefined>();
+  const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   const [editResidenceType, setEditResidenceType] =
       useState<ResidenceType>("ONE_ROOM");
   const [editRentType, setEditRentType] = useState<RentType>("NONE");
@@ -139,6 +147,11 @@ export default function MyPage() {
       setEditResidenceType(meData.residenceType);
       setEditRentType(meData.rentType);
       setEditAddress(meData.address ?? "");
+      setRoadAddress(meData.roadAddress || meData.address || "");
+      setAddressDetail(meData.addressDetail || "");
+      setPostalCode(meData.postalCode || "");
+      setAddressLat(meData.latitude);
+      setAddressLng(meData.longitude);
     } catch (e) {
       console.log("마이페이지 불러오기 실패:", e);
       setMe(null);
@@ -222,11 +235,21 @@ export default function MyPage() {
   }
 
   async function handleSaveProfile() {
+    if (!roadAddress.trim() || addressLat == null || addressLng == null) {
+      Alert.alert("주소 검색 필요", "주소 검색 버튼으로 정확한 도로명 주소를 선택해주세요.");
+      return;
+    }
     try {
+      const combinedAddress = `${roadAddress}${addressDetail.trim() ? ` ${addressDetail.trim()}` : ""}`;
       const updated = await updateMe({
         residenceType: editResidenceType,
         rentType: editRentType,
-        address: editAddress,
+        address: combinedAddress,
+        roadAddress,
+        addressDetail,
+        postalCode,
+        latitude: addressLat,
+        longitude: addressLng,
       });
 
       setMe(updated);
@@ -244,8 +267,13 @@ export default function MyPage() {
         <Stack.Screen options={{ headerShown: false }} />
 
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>마이페이지</Text>
-          <Text style={styles.headerSub}>내 정보와 리포트 내역을 확인하세요</Text>
+          <Pressable style={styles.headerBackButton} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={21} color={MAIN_BLUE}/>
+          </Pressable>
+          <View style={{flex:1}}>
+            <Text style={styles.headerTitle}>마이페이지</Text>
+            <Text style={styles.headerSub}>내 정보와 리포트 내역을 확인하세요</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -356,13 +384,18 @@ export default function MyPage() {
                     ))}
                   </View>
 
-                  <Text style={[styles.editLabel, { marginTop: 20 }]}>상세 주소</Text>
-
+                  <Text style={[styles.editLabel, { marginTop: 20 }]}>주소</Text>
+                  <Pressable style={styles.addressSearchButton} onPress={() => setAddressSearchOpen(true)}>
+                    <Ionicons name="search" size={17} color={MAIN_BLUE}/>
+                    <Text style={styles.addressSearchText}>{roadAddress || "도로명 주소 검색"}</Text>
+                    <Text style={styles.addressSearchAction}>검색</Text>
+                  </Pressable>
+                  {!!postalCode && <Text style={styles.postalCode}>우편번호 {postalCode}</Text>}
                   <TextInput
                       style={styles.addressInput}
-                      value={editAddress}
-                      onChangeText={setEditAddress}
-                      placeholder="상세 주소를 입력해주세요"
+                      value={addressDetail}
+                      onChangeText={setAddressDetail}
+                      placeholder="동·호수 등 상세주소를 입력해주세요"
                       placeholderTextColor="#94a3b8"
                   />
 
@@ -466,13 +499,25 @@ export default function MyPage() {
 
           <Text style={styles.footerInfo}>© 2026 DduckTack. All rights reserved.</Text>
         </ScrollView>
+        <AddressSearchModal
+            visible={addressSearchOpen}
+            onClose={() => setAddressSearchOpen(false)}
+            onSelect={(selected: AddressResult) => {
+              setRoadAddress(selected.roadAddress);
+              setPostalCode(selected.postalCode);
+              setAddressLat(selected.latitude);
+              setAddressLng(selected.longitude);
+              setEditAddress(selected.roadAddress);
+            }}
+        />
       </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#ffffff" },
-  header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, flexDirection:"row", alignItems:"center", gap:13 },
+  headerBackButton: { width:42, height:42, borderRadius:21, backgroundColor:"#EDEDFF", alignItems:"center", justifyContent:"center" },
   headerTitle: { fontSize: 28, fontWeight: "900", color: "#111827" },
   headerSub: { fontSize: 14, color: "#6b7280", marginTop: 4 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -582,6 +627,20 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#1e293b",
   },
+  addressSearchButton: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: "#f8fafc",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#c7d2fe",
+  },
+  addressSearchText: { flex: 1, color: "#334155", fontSize: 14, fontWeight: "700" },
+  addressSearchAction: { color: MAIN_BLUE, fontSize: 13, fontWeight: "900" },
+  postalCode: { color: "#64748b", fontSize: 12, marginTop: 7, marginLeft: 4 },
   saveBtn: {
     backgroundColor: MAIN_BLUE,
     height: 54,

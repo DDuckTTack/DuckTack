@@ -14,6 +14,11 @@ public class UserDtos {
             String email,
             String phoneNumber,
             String address,
+            String roadAddress,
+            String addressDetail,
+            String postalCode,
+            Double latitude,
+            Double longitude,
             ResidenceType residenceType,
             RentType rentType
     ) {}
@@ -35,6 +40,11 @@ public class UserDtos {
             )
             String phoneNumber,
 
-            String address
+            String address,
+            String roadAddress,
+            String addressDetail,
+            String postalCode,
+            Double latitude,
+            Double longitude
     ) {}
 }

@@ -85,12 +85,13 @@ export default function ExpertReviews() {
     vendorId, vendorName, companyId, companyName,
     kakaoPlaceId, kakaoPlaceName, kakaoPlacePhone,
     kakaoPlaceAddress, kakaoPlaceLat, kakaoPlaceLng,
-    historyId, readOnly, from,
+    historyId, readOnly, from, companyPhone, companyAddress, distanceKm, bidPrice,
   } = useLocalSearchParams<{
     vendorId?: string; vendorName?: string; companyId?: string; companyName?: string;
     kakaoPlaceId?: string; kakaoPlaceName?: string; kakaoPlacePhone?: string;
     kakaoPlaceAddress?: string; kakaoPlaceLat?: string; kakaoPlaceLng?: string;
     historyId?: string; readOnly?: string; from?: string;
+    companyPhone?: string; companyAddress?: string; distanceKm?: string; bidPrice?: string;
   }>();
 
   const isReadOnly = readOnly === "true" || from === "expert";
@@ -214,7 +215,7 @@ export default function ExpertReviews() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={20} color={C.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>리뷰</Text>
+        <Text style={styles.headerTitle}>{from === "bid" ? "업체 상세" : "리뷰"}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -233,6 +234,34 @@ export default function ExpertReviews() {
             </View>
           </View>
         </View>
+
+        {from === "bid" && (
+          <View style={styles.companyInfoCard}>
+            <Text style={styles.sectionTitle}>업체 정보</Text>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}><Feather name="map-pin" size={17} color={C.primary} /></View>
+              <View style={styles.infoTextArea}>
+                <Text style={styles.infoLabel}>정확한 위치</Text>
+                <Text style={styles.infoValue}>{companyAddress || "등록된 주소가 없습니다."}</Text>
+              </View>
+            </View>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}><Feather name="navigation" size={17} color={C.primary} /></View>
+              <View style={styles.infoTextArea}>
+                <Text style={styles.infoLabel}>요청 장소에서 거리</Text>
+                <Text style={styles.infoValue}>{distanceKm ? `약 ${Number(distanceKm).toFixed(1)}km` : "거리 정보가 없습니다."}</Text>
+              </View>
+            </View>
+            {!!companyPhone && <View style={styles.infoRow}>
+              <View style={styles.infoIcon}><Feather name="phone" size={17} color={C.primary} /></View>
+              <View style={styles.infoTextArea}>
+                <Text style={styles.infoLabel}>연락처</Text>
+                <Text style={styles.infoValue}>{companyPhone}</Text>
+              </View>
+            </View>}
+            {!!bidPrice && <View style={styles.bidPriceRow}><Text style={styles.bidPriceLabel}>제안 금액</Text><Text style={styles.bidPriceValue}>{Number(bidPrice).toLocaleString("ko-KR")}원</Text></View>}
+          </View>
+        )}
 
         {/* ── 리뷰 작성/관리 영역 ── */}
         {isReadOnly ? (
@@ -418,6 +447,16 @@ const styles = StyleSheet.create({
   summaryScore: { fontSize: 48, fontWeight: "900", color: "#F59E0B", lineHeight: 54 },
   summaryStarCol: { gap: 6 },
   summaryCountText: { fontSize: 13, color: C.sub, fontWeight: "600" },
+  companyInfoCard: { backgroundColor: C.card, borderRadius: 22, padding: 20, borderWidth: 1, borderColor: C.border, gap: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: "900", color: C.text },
+  infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  infoIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: C.primaryBg, alignItems: "center", justifyContent: "center" },
+  infoTextArea: { flex: 1, gap: 3 },
+  infoLabel: { fontSize: 12, color: C.sub, fontWeight: "700" },
+  infoValue: { fontSize: 14, lineHeight: 20, color: C.text, fontWeight: "700" },
+  bidPriceRow: { borderTopWidth: 1, borderTopColor: C.border, paddingTop: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  bidPriceLabel: { fontSize: 14, color: C.sub, fontWeight: "700" },
+  bidPriceValue: { fontSize: 20, color: C.primary, fontWeight: "900" },
 
   // ── 알림/안내 ──
   noticeRow: {

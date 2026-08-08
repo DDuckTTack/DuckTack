@@ -98,6 +98,21 @@ public class KakaoLocalClient {
         }
     }
 
+    public Map<String, Object> searchAddress(String query) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "KakaoAK " + restKey);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        URI uri = UriComponentsBuilder
+                .fromHttpUrl("https://dapi.kakao.com/v2/local/search/address.json")
+                .queryParam("query", query == null ? "" : query.trim())
+                .queryParam("size", 15)
+                .encode(StandardCharsets.UTF_8)
+                .build()
+                .toUri();
+        return restTemplate.exchange(uri, HttpMethod.GET, entity, Map.class).getBody();
+    }
+
     private String maskKey(String key) {
         if (key == null || key.isBlank()) return "EMPTY";
         int show = Math.min(4, key.length());

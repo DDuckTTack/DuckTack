@@ -314,8 +314,13 @@ export default function Histories() {
         <Stack.Screen options={{ headerShown: false }} />
 
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>진단 히스토리</Text>
-          <Text style={styles.headerSub}>우리 집 안전 기록을 한눈에 확인하세요</Text>
+          <Pressable style={styles.headerBackButton} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={21} color={MAIN_BLUE}/>
+          </Pressable>
+          <View style={{flex:1}}>
+            <Text style={styles.headerTitle}>진단 히스토리</Text>
+            <Text style={styles.headerSub}>우리 집 안전 기록을 한눈에 확인하세요</Text>
+          </View>
         </View>
 
         <View style={styles.filterWrapper}>
@@ -515,10 +520,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
 
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 16,
     backgroundColor: HEADER_BG,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 13,
+  },
+  headerBackButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#EDEDFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   headerTitle: {

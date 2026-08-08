@@ -42,6 +42,15 @@ public class User {
     @Column(length = 255)
     private String address;
 
+    @Column(name = "road_address", length = 300)
+    private String roadAddress;
+    @Column(name = "address_detail", length = 200)
+    private String addressDetail;
+    @Column(name = "postal_code", length = 10)
+    private String postalCode;
+    private Double latitude;
+    private Double longitude;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ResidenceType residenceType = ResidenceType.ETC;
@@ -105,6 +114,11 @@ public class User {
     public String getPasswordHash() { return passwordHash; }
     public String getPhoneNumber() { return phoneNumber; }
     public String getAddress() { return address; }
+    public String getRoadAddress() { return roadAddress; }
+    public String getAddressDetail() { return addressDetail; }
+    public String getPostalCode() { return postalCode; }
+    public Double getLatitude() { return latitude; }
+    public Double getLongitude() { return longitude; }
     public ResidenceType getResidenceType() { return residenceType; }
     public RentType getRentType() { return rentType; }
     public UserRole getRole() { return role; }
@@ -121,12 +135,22 @@ public class User {
             ResidenceType residenceType,
             RentType rentType,
             String phoneNumber,
-            String address
+            String address,
+            String roadAddress,
+            String addressDetail,
+            String postalCode,
+            Double latitude,
+            Double longitude
     ) {
         if (residenceType != null) this.residenceType = residenceType;
         if (rentType != null) this.rentType = rentType;
         if (phoneNumber != null) this.phoneNumber = phoneNumber;
         if (address != null) this.address = address;
+        if (roadAddress != null) this.roadAddress = roadAddress;
+        if (addressDetail != null) this.addressDetail = addressDetail;
+        if (postalCode != null) this.postalCode = postalCode;
+        if (latitude != null) this.latitude = latitude;
+        if (longitude != null) this.longitude = longitude;
     }
 
     public void changePassword(String passwordHash) {
