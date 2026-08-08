@@ -55,6 +55,9 @@ public class Company {
   private Double latitude;
   private Double longitude;
 
+  @Column(name = "bid_radius_km", nullable = false, columnDefinition = "integer default 10")
+  private Integer bidRadiusKm = 10;
+
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "company_specialties", joinColumns = @JoinColumn(name = "company_id"))
   @Enumerated(EnumType.STRING)
@@ -143,6 +146,7 @@ public class Company {
   public String getServiceRegionLabel() { return serviceRegionLabel; }
   public Double getLatitude() { return latitude; }
   public Double getLongitude() { return longitude; }
+  public Integer getBidRadiusKm() { return bidRadiusKm; }
   public Set<IssueType> getSpecialties() { return specialties; }
   public Integer getMinEstimatedQuoteKrw() { return minEstimatedQuoteKrw; }
   public Integer getMaxEstimatedQuoteKrw() { return maxEstimatedQuoteKrw; }
@@ -195,6 +199,14 @@ public class Company {
     this.active = false;
     this.partner = false;
     this.partnerPriority = 0;
+    this.updatedAt = OffsetDateTime.now();
+  }
+
+  public void updateBidRadiusKm(Integer radiusKm) {
+    if (radiusKm == null || radiusKm < 1 || radiusKm > 100) {
+      throw new IllegalArgumentException("입찰 수신 반경은 1~100km 사이여야 합니다.");
+    }
+    this.bidRadiusKm = radiusKm;
     this.updatedAt = OffsetDateTime.now();
   }
 

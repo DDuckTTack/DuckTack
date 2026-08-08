@@ -9,6 +9,7 @@ import CompanyUnavailableTimesPage from "./pages/company/CompanyUnavailableTimes
 import CompanyCalendarPage from "./pages/company/CompanyCalendarPage";
 import CompanyReservationsPage from "./pages/company/CompanyReservationsPage";
 import CompanyReviewsPage from "./pages/company/CompanyReviewsPage";
+import CompanyBidsPage from "./pages/company/CompanyBidsPage";
 
 // community
 import CommunityListPage from "./pages/community/CommunityListPage";
@@ -32,6 +33,7 @@ import AdminSupportInboxPage from "./pages/admin/AdminSupportInboxPage";
 import AdminSupportThreadPage from "./pages/admin/AdminSupportThreadPage";
 import AdminCommunityReportsPage from "./pages/admin/AdminCommunityReportsPage";
 import AdminLayout from "./pages/admin/AdminLayout";
+import AdminBidsPage from "./pages/admin/AdminBidsPage";
 
 // route 보호
 import AdminRoute from "./routes/AdminRoute";
@@ -69,6 +71,7 @@ function App() {
                     path="/company/reviews"
                     element={<CompanyReviewsPage />}
                 />
+                <Route path="/company/bids" element={<CompanyBidsPage />} />
 
                 {/* community */}
                 <Route path="/company/community" element={<CommunityListPage />} />
@@ -105,6 +108,8 @@ function App() {
                         path="reservations"
                         element={<ReservationsPage />}
                     />
+
+                    <Route path="bids" element={<AdminBidsPage />} />
 
                     <Route
                         path="users"

@@ -16,6 +16,11 @@ function AdminLayout() {
             path: "/admin/reservations"
         },
         {
+            label: "입찰 관리",
+            icon: "💰",
+            path: "/admin/bids"
+        },
+        {
             label: "사용자 관리",
             icon: "👤",
             path: "/admin/users"

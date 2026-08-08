@@ -77,6 +77,13 @@ function CompanyPage() {
                 <button
                     type="button"
                     style={styles.button}
+                    onClick={() => navigate("/company/bids")}
+                >
+                    💰 입찰 관리
+                </button>
+                <button
+                    type="button"
+                    style={styles.button}
                     onClick={() => navigate("/company/community")}
                 >
                     💬 커뮤니티

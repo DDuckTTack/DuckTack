@@ -184,6 +184,11 @@ public class UserService {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.getAddress(),
+                user.getRoadAddress(),
+                user.getAddressDetail(),
+                user.getPostalCode(),
+                user.getLatitude(),
+                user.getLongitude(),
                 user.getResidenceType(),
                 user.getRentType()
         );
@@ -198,7 +203,12 @@ public class UserService {
                 req.residenceType(),
                 req.rentType(),
                 req.phoneNumber(),
-                req.address()
+                req.address(),
+                req.roadAddress(),
+                req.addressDetail(),
+                req.postalCode(),
+                req.latitude(),
+                req.longitude()
         );
 
         log.info("Profile updated: {}", username);
@@ -210,6 +220,11 @@ public class UserService {
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.getAddress(),
+                user.getRoadAddress(),
+                user.getAddressDetail(),
+                user.getPostalCode(),
+                user.getLatitude(),
+                user.getLongitude(),
                 user.getResidenceType(),
                 user.getRentType()
         );
