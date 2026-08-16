@@ -70,6 +70,12 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<ApiResponse<Void>> handleInvalidState(RuntimeException e) {
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT.status())
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT.code(), e.getMessage()));
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException e) {
         log.warn("데이터 중복 제약 위반: {}", e.getMessage());

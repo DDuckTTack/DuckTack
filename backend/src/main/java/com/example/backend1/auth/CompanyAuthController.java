@@ -4,16 +4,20 @@ import com.example.backend1.auth.dto.CompanySignupRequest;
 import com.example.backend1.auth.dto.LoginRequest;
 import com.example.backend1.company.domain.Company;
 import com.example.backend1.company.repo.CompanyRepository;
+import com.example.backend1.company.service.KakaoLocalClient;
 import com.example.backend1.diagnosis.domain.IssueType;
 import com.example.backend1.security.JwtTokenProvider;
 import com.example.backend1.user.domain.User;
 import com.example.backend1.user.domain.UserRole;
 import com.example.backend1.user.repo.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,11 +25,13 @@ import java.util.Set;
 @RequestMapping("/api/company/auth")
 @RequiredArgsConstructor
 public class CompanyAuthController {
+    private static final Logger log = LoggerFactory.getLogger(CompanyAuthController.class);
 
     private final UserRepository userRepo;
     private final CompanyRepository companyRepo;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final KakaoLocalClient kakao;
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody LoginRequest req) {
@@ -98,6 +104,8 @@ public class CompanyAuthController {
 
         Company company = new Company(req.companyName());
 
+        double[] coords = geocode(req.address());
+
         company.updateFrom(
                 req.companyName(),
                 req.businessNumber(),
@@ -107,8 +115,8 @@ public class CompanyAuthController {
                 req.address(),
                 req.zipCode(),
                 req.serviceArea(),
-                null,
-                null,
+                coords == null ? null : coords[0],
+                coords == null ? null : coords[1],
                 specialties,
                 null,
                 null,
@@ -135,6 +143,37 @@ public class CompanyAuthController {
         userRepo.save(user);
 
         return "업체 회원가입 완료 (관리자 승인 필요)";
+    }
+
+    /**
+     * 업체 주소 문자열을 카카오 로컬 API로 지오코딩한다.
+     * 실패/결과없음 시 null 반환 — 가입 자체를 막지 않고 좌표만 비워둠(관리자가 나중에 보완).
+     *
+     * @return {lat, lng} 또는 null
+     */
+    private double[] geocode(String address) {
+        if (address == null || address.isBlank()) return null;
+        try {
+            Map<String, Object> response = kakao.searchAddress(address);
+            Object raw = response == null ? null : response.get("documents");
+            if (!(raw instanceof List<?> documents) || documents.isEmpty()) return null;
+            if (!(documents.get(0) instanceof Map<?, ?> document)) return null;
+            Double lat = toDouble(document.get("y"));
+            Double lng = toDouble(document.get("x"));
+            if (lat == null || lng == null) return null;
+            return new double[]{lat, lng};
+        } catch (Exception e) {
+            log.warn("[CompanyAuthController] 업체 주소 지오코딩 실패 address={}", address, e);
+            return null;
+        }
+    }
+
+    private static Double toDouble(Object value) {
+        try {
+            return value == null ? null : Double.valueOf(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private IssueType parseIssueType(String raw) {

@@ -73,7 +73,7 @@ export default function BidListPage() {
               <Text style={s.issue}>{item.issueType} 수리 입찰</Text>
               <Text style={s.address} numberOfLines={1}>📍 {item.address}</Text>
               <View style={s.divider}/>
-              <View style={s.bottom}><View><Text style={s.offerCount}>{item.offers?.length || 0}개 업체 참여</Text>
+              <View style={s.bottom}><View><Text style={[s.offerCount, item.status === "OPEN" && (item.offers?.length || 0) <= 1 && s.offerCountLow]}>{item.offers?.length || 0}개 업체 참여</Text>
                 <Text style={s.date}>{formatDate(item.createdAt)} 요청</Text></View>
                 <View style={s.detail}><Text style={s.detailText}>상세보기</Text><Feather name="chevron-right" size={18} color={BLUE}/></View></View>
             </Pressable>;
@@ -91,6 +91,6 @@ const s=StyleSheet.create({
   card:{backgroundColor:"#fff",borderRadius:18,padding:18,marginBottom:13,borderWidth:1,borderColor:"#E2E8F0"},cardTop:{flexDirection:"row",justifyContent:"space-between",alignItems:"center"},
   status:{flexDirection:"row",alignItems:"center",gap:5,paddingHorizontal:9,paddingVertical:6,borderRadius:99,borderWidth:1},statusText:{fontSize:12,fontWeight:"900"},deadline:{fontSize:13,fontWeight:"900",color:"#EF4444"},
   issue:{fontSize:19,fontWeight:"900",color:"#0F172A",marginTop:14},address:{fontSize:13,color:"#64748B",marginTop:8},divider:{height:1,backgroundColor:"#F1F5F9",marginVertical:15},
-  bottom:{flexDirection:"row",justifyContent:"space-between",alignItems:"center"},offerCount:{fontSize:14,fontWeight:"900",color:BLUE},date:{fontSize:11,color:"#94A3B8",marginTop:4},
+  bottom:{flexDirection:"row",justifyContent:"space-between",alignItems:"center"},offerCount:{fontSize:14,fontWeight:"900",color:BLUE},offerCountLow:{color:"#B45309"},date:{fontSize:11,color:"#94A3B8",marginTop:4},
   detail:{flexDirection:"row",alignItems:"center"},detailText:{fontSize:13,fontWeight:"800",color:BLUE},empty:{alignItems:"center",paddingTop:90},emptyTitle:{fontSize:17,fontWeight:"900",color:"#475569",marginTop:14},emptySub:{fontSize:13,color:"#94A3B8",marginTop:7}
 });
