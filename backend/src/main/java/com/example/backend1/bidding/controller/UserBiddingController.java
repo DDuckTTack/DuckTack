@@ -34,4 +34,16 @@ public class UserBiddingController {
                                                           @PathVariable Long bidId) {
         return ApiResponse.ok(service.select(auth.getName(), id, bidId));
     }
+
+    @PostMapping("/{id}/extend")
+    public ApiResponse<BiddingDtos.Item> extend(Authentication auth, @PathVariable Long id,
+                                                @RequestBody BiddingDtos.ExtendDeadlineRequest req) {
+        return ApiResponse.ok(service.extendDeadline(auth.getName(), id, req.minutes()));
+    }
+
+    @PostMapping("/{id}/widen-radius")
+    public ApiResponse<BiddingDtos.Item> widenRadius(Authentication auth, @PathVariable Long id,
+                                                      @RequestBody BiddingDtos.WidenRadiusRequest req) {
+        return ApiResponse.ok(service.widenRadius(auth.getName(), id, req.maxDistanceKm()));
+    }
 }

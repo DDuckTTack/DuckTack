@@ -511,7 +511,7 @@ export default function Result() {
     router.push({
       pathname: "/bids" as any,
       params: {
-        historyId: effectiveHistoryId,
+        historyId: effectiveHistoryId || effectiveDiagnosisId,
         imageUrl: data?.imageUrl,
         issueType: effectiveIssueType,
       },
@@ -690,13 +690,18 @@ export default function Result() {
                 <Text style={styles.choiceButtonText}>전문가 보기</Text>
               </Pressable>
             </View>
-            <Pressable
-                style={[styles.actionBtn, { backgroundColor: "#172033", marginTop: 12 }]}
-                onPress={goBids}
-            >
-              <Text style={styles.actionBtnText}>여러 업체에 입찰받기</Text>
-            </Pressable>
           </View>
+
+          <Pressable style={styles.bidCard} onPress={goBids}>
+            <View style={styles.bidCardIconBox}>
+              <Feather name="bar-chart-2" size={22} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bidCardTitle}>여러 업체에 입찰받기</Text>
+              <Text style={styles.bidCardSubtitle}>여러 업체의 가격을 비교하고 합리적으로 선택하세요</Text>
+            </View>
+            <Feather name="chevron-right" size={20} color="#fff" />
+          </Pressable>
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -1022,13 +1027,45 @@ const styles = StyleSheet.create({
   },
 
   choiceButtonLeft: {
-    backgroundColor: "#EDEDFF",
-    borderColor: "#C7D2FE",
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
   },
 
   choiceButtonRight: {
     backgroundColor: "#EDEDFF",
     borderColor: "#C7D2FE",
+  },
+
+  bidCard: {
+    marginTop: 16,
+    backgroundColor: "#172033",
+    borderRadius: 20,
+    padding: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+
+  bidCardIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  bidCardTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#fff",
+  },
+
+  bidCardSubtitle: {
+    fontSize: 12.5,
+    color: "#CBD5E1",
+    marginTop: 4,
+    lineHeight: 17,
   },
 
   choiceButtonText: {

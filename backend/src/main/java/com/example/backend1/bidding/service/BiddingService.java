@@ -45,12 +45,15 @@ public class BiddingService {
         if (req.deadline() == null || req.deadline().isBefore(OffsetDateTime.now().plusMinutes(5))) {
             throw new IllegalArgumentException("입찰 마감은 현재로부터 5분 이후여야 합니다.");
         }
+        if (req.maxDistanceKm() != null && (req.maxDistanceKm() < 1 || req.maxDistanceKm() > 100)) {
+            throw new IllegalArgumentException("최대 반경은 1~100km 사이여야 합니다.");
+        }
         String address = req.address() == null || req.address().isBlank() ? user.getAddress() : req.address().trim();
         Double latitude = req.latitude() == null ? user.getLatitude() : req.latitude();
         Double longitude = req.longitude() == null ? user.getLongitude() : req.longitude();
         if (address == null || address.isBlank()) throw new IllegalArgumentException("작업 주소가 필요합니다.");
         BidRequest saved = requestRepository.save(new BidRequest(
-                user, history, address, latitude, longitude, req.requestNote(), req.deadline()));
+                user, history, address, latitude, longitude, req.requestNote(), req.deadline(), req.maxDistanceKm()));
         return toItem(saved, null, true);
     }
 
@@ -65,6 +68,22 @@ public class BiddingService {
         BidRequest request = requestRepository.findByIdAndUserUsername(id, username)
                 .orElseThrow(() -> new IllegalArgumentException("입찰 요청을 찾을 수 없습니다."));
         request.expireIfNeeded();
+        return toItem(request, null, true);
+    }
+
+    public BiddingDtos.Item extendDeadline(String username, Long requestId, Integer minutes) {
+        BidRequest request = requestRepository.findByIdAndUserUsername(requestId, username)
+                .orElseThrow(() -> new IllegalArgumentException("입찰 요청을 찾을 수 없습니다."));
+        request.expireIfNeeded();
+        request.extendDeadline(minutes == null ? 0 : minutes);
+        return toItem(request, null, true);
+    }
+
+    public BiddingDtos.Item widenRadius(String username, Long requestId, Integer maxDistanceKm) {
+        BidRequest request = requestRepository.findByIdAndUserUsername(requestId, username)
+                .orElseThrow(() -> new IllegalArgumentException("입찰 요청을 찾을 수 없습니다."));
+        request.expireIfNeeded();
+        request.widenMaxDistanceKm(maxDistanceKm);
         return toItem(request, null, true);
     }
 
@@ -86,7 +105,8 @@ public class BiddingService {
                 .filter(BidRequest::isOpen)
                 .map(r -> new DistanceRequest(r, distanceKm(company.getLatitude(), company.getLongitude(),
                         r.getLatitude(), r.getLongitude())))
-                .filter(v -> v.distance == null || v.distance <= company.getBidRadiusKm())
+                .filter(v -> v.distance != null && v.distance <= company.getBidRadiusKm()
+                        && (v.request.getMaxDistanceKm() == null || v.distance <= v.request.getMaxDistanceKm()))
                 .map(v -> toItem(v.request, v.distance, false, company))
                 .toList();
     }
@@ -98,8 +118,14 @@ public class BiddingService {
         if (!request.isOpen()) throw new IllegalStateException("마감된 입찰입니다.");
         Double distance = distanceKm(company.getLatitude(), company.getLongitude(),
                 request.getLatitude(), request.getLongitude());
-        if (distance != null && distance > company.getBidRadiusKm()) {
+        if (distance == null) {
+            throw new IllegalArgumentException("업체 위치 정보가 없어 입찰할 수 없습니다. 업체 정보를 다시 확인해주세요.");
+        }
+        if (distance > company.getBidRadiusKm()) {
             throw new IllegalArgumentException("설정한 입찰 반경 밖의 요청입니다.");
+        }
+        if (request.getMaxDistanceKm() != null && distance > request.getMaxDistanceKm()) {
+            throw new IllegalArgumentException("요청자가 지정한 반경 밖의 요청입니다.");
         }
         CompanyBid bid = bidRepository.findByBidRequestIdAndCompanyId(requestId, company.getId())
                 .orElseGet(() -> new CompanyBid(request, company, req.price(), req.message()));
@@ -167,8 +193,8 @@ public class BiddingService {
                 : bidRepository.findByBidRequestIdAndCompanyId(request.getId(), viewingCompany.getId()).orElse(null);
         return new BiddingDtos.Item(request.getId(), history.getId(), imageUrl,
                 history.getIssueType().name(), history.getRiskScore(), maskName(request.getUser().getUsername()),
-                request.getAddress(), companyDistance, request.getRequestNote(), request.getDeadline(),
-                request.getStatus().name(), request.getCreatedAt(), offers,
+                request.getAddress(), companyDistance, request.getRequestNote(), request.getMaxDistanceKm(),
+                request.getDeadline(), request.getStatus().name(), request.getCreatedAt(), offers,
                 myBid == null ? null : myBid.getId(),
                 myBid == null ? null : myBid.getPrice(),
                 myBid == null ? null : myBid.getMessage());
