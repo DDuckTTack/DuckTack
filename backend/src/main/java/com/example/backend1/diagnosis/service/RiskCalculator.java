@@ -34,22 +34,53 @@ public class RiskCalculator {
     );
 
     /**
+     * 심각도 등급별 보정 계수.
+     *
+     * <p>기존 YOLO 의 confidence 자리를 대체한다. LLM 이 뱉는 confidence 는 학습 기반 확률이
+     * 아니라 사실상 임의값이라 점수에 곱하면 근거 없이 왜곡되므로, 이산적인 등급을 쓴다.
+     * 범위(0.5~1.0)는 기존 confFactor 와 동일하게 맞춰 점수 스케일이 튀지 않게 했다.
+     */
+    private static final Map<String, Double> SEVERITY_FACTOR = Map.of(
+            "HIGH", 1.0,
+            "MEDIUM", 0.8,
+            "LOW", 0.6
+    );
+
+    private static final double DEFAULT_SEVERITY_FACTOR = 0.8;
+
+    /**
      * 단일 detection 위험 점수.
      */
     private double detectionScore(YoloResponse.Detection d) {
         DefectClass cls = d.toDefectClass();
 
         double base = SEVERITY_WEIGHT.getOrDefault(cls, 0.5);
-        double conf = d.confidence() == null ? 0.5 : d.confidence();
         double area = d.areaRatio() == null ? 0.1 : d.areaRatio();
 
         // 면적이 클수록 위험 가중치 1.0~1.3배 보정
         double areaBoost = 1.0 + Math.min(Math.max(area, 0.0) * 1.0, 0.3);
 
-        // confidence 낮은 가중치로 반영 (0.5~1.0 범위)
-        double confFactor = 0.5 + (conf * 0.5);
+        return base * areaBoost * severityFactor(d);
+    }
 
-        return base * areaBoost * confFactor;
+    /**
+     * LLM 탐지면 severity 를, 과거 YOLO 데이터면 confidence 를 사용한다.
+     * (둘 다 없으면 중간값)
+     */
+    private double severityFactor(YoloResponse.Detection d) {
+        if (d.severity() != null && !d.severity().isBlank()) {
+            return SEVERITY_FACTOR.getOrDefault(
+                    d.severity().trim().toUpperCase(java.util.Locale.ROOT),
+                    DEFAULT_SEVERITY_FACTOR
+            );
+        }
+
+        if (d.confidence() != null) {
+            // 기존 YOLO 결과 호환: confidence 를 0.5~1.0 범위로 반영
+            return 0.5 + (d.confidence() * 0.5);
+        }
+
+        return DEFAULT_SEVERITY_FACTOR;
     }
 
     /**

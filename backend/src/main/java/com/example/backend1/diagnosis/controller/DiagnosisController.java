@@ -40,19 +40,20 @@ public class DiagnosisController {
         this.orchestrator = orchestrator;
     }
 
-    @Operation(summary = "이미지 업로드 → AI 진단 (YOLO + LLM)")
+    @Operation(summary = "이미지 업로드 → AI 진단 (LLM 비전)")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<DiagnosisFullResponse> diagnose(
             Authentication authentication,
-            @Parameter(description = "진단할 이미지 파일", required = true,
+            @Parameter(description = "진단할 이미지 파일. 같은 하자를 여러 각도에서 찍었다면 여러 장을 보내면 된다.",
+                    required = true,
                     content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                             schema = @Schema(type = "string", format = "binary")))
-            @RequestParam("image") MultipartFile image,
+            @RequestParam("image") java.util.List<MultipartFile> images,
             @Parameter(description = "HIGH 위험도라도 DIY 가이드 요청 여부 (기본값: false)")
             @RequestParam(value = "preferDiy", required = false, defaultValue = "false") boolean preferDiy
     ) {
         String username = authentication.getName();
-        return ApiResponse.ok(orchestrator.diagnose(username, image, preferDiy));
+        return ApiResponse.ok(orchestrator.diagnose(username, images, preferDiy));
     }
 
     @Operation(summary = "진단 결과 단건 조회")

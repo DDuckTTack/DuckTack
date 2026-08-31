@@ -110,14 +110,16 @@ export async function startDiagnosis(preferDiy = false): Promise<{
   const images = await getPendingImages();
   if (images.length === 0) throw new Error("NO_PENDING_IMAGES");
 
-  // 첫 번째 이미지 사용
-  const uri = images[0];
-  const filename = uri.split("/").pop() || "image.jpg";
-  const ext = filename.split(".").pop()?.toLowerCase();
-  const type = ext === "png" ? "image/png" : "image/jpeg";
-
+  // 등록된 사진을 모두 전송한다. 서버가 여러 장을 한 번에 종합 분석한다.
   const formData = new FormData();
-  formData.append("image", { uri, name: filename, type } as any);
+
+  images.forEach((uri, index) => {
+    const filename = uri.split("/").pop() || `image-${index}.jpg`;
+    const ext = filename.split(".").pop()?.toLowerCase();
+    const type = ext === "png" ? "image/png" : "image/jpeg";
+
+    formData.append("image", { uri, name: filename, type } as any);
+  });
 
   const url = preferDiy ? "/api/diagnosis?preferDiy=true" : "/api/diagnosis";
 

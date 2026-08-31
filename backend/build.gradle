@@ -56,6 +56,8 @@ dependencies {
   // ✅ 테스트
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testImplementation 'org.springframework.security:spring-security-test'
+  // Gradle 9 부터는 JUnit Platform launcher 를 명시적으로 넣어줘야 테스트가 실행된다
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {

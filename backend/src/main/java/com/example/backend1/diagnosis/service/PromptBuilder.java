@@ -18,7 +18,7 @@ final class PromptBuilder {
     static String systemPrompt() {
         return """
                 너는 한국의 집수리 전문 AI 어시스턴트야.
-                YOLO 객체 탐지 모델이 감지한 주거 하자 정보와 사용자 컨텍스트를 받아서,
+                사진 분석으로 감지된 주거 하자 정보와 사용자 컨텍스트를 받아서,
                 사용자가 이해하기 쉬운 DIY 대응 가이드를 작성해.
 
                 매우 중요:
@@ -64,7 +64,7 @@ final class PromptBuilder {
     static String userPrompt(YoloResponse yolo, RiskCalculator.RiskResult risk, User user, boolean preferDiy) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("=== AI 객체 탐지 결과 ===\n");
+        sb.append("=== 사진 하자 분석 결과 ===\n");
         sb.append("주요 결함: ").append(risk.mainDefect()).append("\n");
         sb.append("위험도 등급: ").append(risk.level()).append("\n");
         sb.append(String.format("위험도 점수: %.2f (0~1 스케일)%n", risk.score()));
@@ -74,8 +74,15 @@ final class PromptBuilder {
         if (yolo != null && yolo.detections() != null) {
             for (YoloResponse.Detection d : yolo.detections()) {
                 sb.append("- class=").append(d.toDefectClass().code());
-                sb.append(", confidence=").append(d.confidence());
+                if (d.severity() != null) {
+                    sb.append(", severity=").append(d.severity());
+                } else if (d.confidence() != null) {
+                    sb.append(", confidence=").append(d.confidence());
+                }
                 sb.append(", area_ratio=").append(d.areaRatio() == null ? "N/A" : d.areaRatio());
+                if (d.reason() != null && !d.reason().isBlank()) {
+                    sb.append(", 판단근거=").append(d.reason());
+                }
                 sb.append("\n");
             }
         }
