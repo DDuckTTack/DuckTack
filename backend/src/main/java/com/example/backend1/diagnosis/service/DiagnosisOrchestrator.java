@@ -1,8 +1,8 @@
 package com.example.backend1.diagnosis.service;
 
 import com.example.backend1.ai.llm.GuideResponse;
+import com.example.backend1.ai.llm.LlmVisionDetector;
 import com.example.backend1.ai.llm.OpenAiLlmClient;
-import com.example.backend1.ai.yolo.YoloClient;
 import com.example.backend1.ai.yolo.YoloResponse;
 import com.example.backend1.common.ApiException;
 import com.example.backend1.common.ErrorCode;
@@ -31,15 +31,18 @@ import org.springframework.web.multipart.MultipartFile;
  * 사용자 multipart 업로드
  *   ↓
  * 1. FileStorage 에 이미지 저장 (/storage/uploads/)
- * 2. YoloClient 로 GCP YOLO 서버 호출  (multipart forward)
+ * 2. LlmVisionDetector 로 하자 탐지 (LLM 비전 호출)
  * 3. RiskCalculator 로 위험도 계산   (백엔드 자체 로직)
- * 4. OpenAI LLM 호출 (DIY 가이드 + 자재 추천 JSON 생성)
+ * 4. OpenAI LLM 호출 (DIY 가이드 JSON 생성)
  * 5. DiagnosisResult 엔티티에 영속화
  * 6. DiagnosisFullResponse 로 응답
  * </pre>
  *
- * <p>YOLO 실패는 사용자에게 503 으로 노출(=fail fast).
- * <p>LLM 실패는 fallback 가이드로 graceful degradation — 분석 자체는 완료된 거니까 결과는 보여줘야 함.
+ * <p>탐지 실패는 사용자에게 노출(=fail fast). 탐지가 안 되면 진단 자체가 성립하지 않기 때문.
+ * <p>가이드 생성 실패는 fallback 가이드로 graceful degradation — 탐지는 됐으니 결과는 보여줘야 함.
+ *
+ * <p>과거에는 2번을 자체 학습 YOLO + SAM 서버(ai-server)가 담당했으나, 학습 데이터 부족으로
+ * LLM 비전 모델로 전환했다. 탐지 결과 스키마({@link YoloResponse})는 그대로 유지된다.
  */
 @Service
 public class DiagnosisOrchestrator {
@@ -48,7 +51,7 @@ public class DiagnosisOrchestrator {
 
     private final UserRepository userRepository;
     private final FileStorage fileStorage;
-    private final YoloClient yoloClient;
+    private final LlmVisionDetector visionDetector;
     private final RiskCalculator riskCalculator;
     private final OpenAiLlmClient llmClient;
     private final DiagnosisResultRepository resultRepository;
@@ -58,7 +61,7 @@ public class DiagnosisOrchestrator {
     public DiagnosisOrchestrator(
             UserRepository userRepository,
             FileStorage fileStorage,
-            YoloClient yoloClient,
+            LlmVisionDetector visionDetector,
             RiskCalculator riskCalculator,
             OpenAiLlmClient llmClient,
             DiagnosisResultRepository resultRepository,
@@ -67,7 +70,7 @@ public class DiagnosisOrchestrator {
     ) {
         this.userRepository = userRepository;
         this.fileStorage = fileStorage;
-        this.yoloClient = yoloClient;
+        this.visionDetector = visionDetector;
         this.riskCalculator = riskCalculator;
         this.llmClient = llmClient;
         this.resultRepository = resultRepository;
@@ -83,24 +86,47 @@ public class DiagnosisOrchestrator {
      */
     @Transactional
     public DiagnosisFullResponse diagnose(String username, MultipartFile image) {
-        return diagnose(username, image, false);
+        return diagnose(username, java.util.List.of(image), false);
     }
 
     @Transactional
     public DiagnosisFullResponse diagnose(String username, MultipartFile image, boolean preferDiy) {
-        if (image == null || image.isEmpty()) {
+        return diagnose(username, java.util.List.of(image), preferDiy);
+    }
+
+    /**
+     * 여러 장을 함께 진단한다.
+     *
+     * <p>사용자가 같은 하자를 여러 각도에서 찍어 올릴 수 있으므로 전부 LLM 에 넘겨
+     * 한 번에 종합 판단시킨다. 저장/응답의 대표 이미지는 첫 번째 장을 쓴다.
+     */
+    @Transactional
+    public DiagnosisFullResponse diagnose(String username, java.util.List<MultipartFile> images, boolean preferDiy) {
+        java.util.List<MultipartFile> validImages = images == null
+                ? java.util.List.<MultipartFile>of()
+                : images.stream().filter(f -> f != null && !f.isEmpty()).toList();
+
+        if (validImages.isEmpty()) {
             throw new ApiException(ErrorCode.INVALID_INPUT, "이미지를 업로드해주세요.");
         }
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        // 1) 이미지 디스크 저장 (storage/uploads/...)
-        StoredFile stored = fileStorage.save(image);
-        log.info("[DiagnosisOrchestrator] image stored key={} size={}", stored.key(), stored.sizeBytes());
+        // 1) 이미지 디스크 저장 (storage/uploads/...) — 대표 이미지는 첫 장
+        StoredFile stored = fileStorage.save(validImages.get(0));
+        for (int i = 1; i < validImages.size(); i++) {
+            try {
+                fileStorage.save(validImages.get(i));
+            } catch (Exception e) {
+                log.warn("[DiagnosisOrchestrator] 추가 이미지 저장 실패 (분석에는 영향 없음)", e);
+            }
+        }
+        log.info("[DiagnosisOrchestrator] images={} stored key={} size={}",
+                validImages.size(), stored.key(), stored.sizeBytes());
 
-        // 2) YOLO 호출 (실패 시 503 으로 즉시 노출)
-        YoloResponse yolo = yoloClient.detect(image);
+        // 2) LLM 비전으로 하자 탐지 — 올린 사진 전부를 한 번에 분석 (실패 시 즉시 노출)
+        YoloResponse yolo = visionDetector.detect(validImages);
 
         // 3) 위험도 계산
         RiskCalculator.RiskResult risk = riskCalculator.calculate(yolo);

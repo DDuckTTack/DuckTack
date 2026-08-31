@@ -40,7 +40,7 @@ services:
       MODERATION_ENABLED: ${MODERATION_ENABLED:-true}
       MODERATION_FAIL_OPEN: ${MODERATION_FAIL_OPEN:-true}
       LLM_API_KEY: ${LLM_API_KEY}
-      LLM_MODEL: ${LLM_MODEL:-gemini-2.0-flash}
+      LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-8192}
     ports:
       - "8080:8080"

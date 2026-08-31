@@ -20,7 +20,7 @@ import java.util.Map;
  * <p>다음 공급자 모두 동일한 클라이언트로 호출 가능 (URL/모델/키만 다름):
  * <ul>
  *   <li>Google Gemini   — base-url: {@code https://generativelanguage.googleapis.com/v1beta/openai}
- *                         model: {@code gemini-2.0-flash}, {@code gemini-2.5-flash}, {@code gemini-2.5-pro}</li>
+ *                         model: {@code gemini-2.5-flash}, {@code gemini-2.5-pro}, {@code gemini-flash-latest}</li>
  *   <li>OpenAI          — base-url: {@code https://api.openai.com/v1}
  *                         model: {@code gpt-4o-mini}, {@code gpt-4o}</li>
  *   <li>그 외 OpenAI 호환 API — Together AI, Fireworks, vLLM 자체 호스팅 등</li>
@@ -47,7 +47,7 @@ public class OpenAiLlmClient {
             //   기본값: Gemini (무료 한도 사용)
             @Value("${llm.base-url:https://generativelanguage.googleapis.com/v1beta/openai}") String baseUrl,
             @Value("${llm.api-key:}") String apiKey,
-            @Value("${llm.model:gemini-2.0-flash}") String model,
+            @Value("${llm.model:gemini-2.5-flash}") String model,
             @Value("${llm.temperature:0.3}") double temperature,
             @Value("${llm.max-tokens:2000}") int maxTokens
     ) {
@@ -68,6 +68,42 @@ public class OpenAiLlmClient {
      * @return LLM 이 생성한 JSON 문자열 (호출부에서 ObjectMapper 로 파싱)
      */
     public String chat(String systemPrompt, String userPrompt) {
+        return call(systemPrompt, userPrompt, null);
+    }
+
+    /**
+     * 이미지를 함께 보내는 비전 호출.
+     *
+     * <p>OpenAI 호환 멀티모달 포맷(content 배열 + data URL)을 사용한다.
+     * Gemini 2.x / GPT-4o 계열 모두 동일 스키마를 지원한다.
+     *
+     * @param imageBytes  원본 이미지 바이트
+     * @param contentType image/jpeg, image/png 등. 없으면 image/jpeg 로 간주.
+     */
+    public String chatWithImage(String systemPrompt, String userPrompt, byte[] imageBytes, String contentType) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new ApiException(ErrorCode.LLM_FAILED, "분석할 이미지가 비어있습니다.");
+        }
+        return chatWithImages(systemPrompt, userPrompt, List.of(new ImagePart(imageBytes, contentType)));
+    }
+
+    /**
+     * 여러 장의 이미지를 한 번의 호출로 함께 분석한다.
+     *
+     * <p>같은 하자를 여러 각도에서 찍은 사진들을 한 컨텍스트로 넘겨야
+     * 모델이 종합해서 판단할 수 있다. 장수만큼 이미지 토큰이 늘어난다.
+     */
+    public String chatWithImages(String systemPrompt, String userPrompt, List<ImagePart> images) {
+        if (images == null || images.isEmpty()) {
+            throw new ApiException(ErrorCode.LLM_FAILED, "분석할 이미지가 비어있습니다.");
+        }
+        return call(systemPrompt, userPrompt, images);
+    }
+
+    /** 비전 호출에 넘길 이미지 1장. */
+    public record ImagePart(byte[] bytes, String contentType) {}
+
+    private String call(String systemPrompt, String userPrompt, List<ImagePart> images) {
         if (apiKey.isBlank()) {
             log.error("[LLM] api-key 가 비어있습니다. LLM_API_KEY 환경변수를 주입하세요.");
             throw new ApiException(ErrorCode.LLM_FAILED, "LLM API 키가 설정되지 않았습니다.");
@@ -79,11 +115,32 @@ public class OpenAiLlmClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
 
+        Object userContent;
+        if (images == null || images.isEmpty()) {
+            userContent = userPrompt;
+        } else {
+            List<Map<String, Object>> parts = new java.util.ArrayList<>();
+            parts.add(Map.of("type", "text", "text", userPrompt));
+
+            for (ImagePart image : images) {
+                if (image == null || image.bytes() == null || image.bytes().length == 0) continue;
+
+                String mime = (image.contentType() == null || image.contentType().isBlank())
+                        ? "image/jpeg" : image.contentType();
+                String dataUrl = "data:" + mime + ";base64,"
+                        + java.util.Base64.getEncoder().encodeToString(image.bytes());
+
+                parts.add(Map.of("type", "image_url", "image_url", Map.of("url", dataUrl)));
+            }
+
+            userContent = parts;
+        }
+
         Map<String, Object> body = Map.of(
                 "model", model,
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
-                        Map.of("role", "user",   "content", userPrompt)
+                        Map.of("role", "user",   "content", userContent)
                 ),
                 // ⭐ JSON 강제 출력 (OpenAI gpt-4o/4o-mini, Gemini 2.x 모두 지원)
                 "response_format", Map.of("type", "json_object"),
