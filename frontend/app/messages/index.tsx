@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, FlatList } from "react-native";
+import { useCallback, useState } from "react";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, FlatList, Alert } from "react-native";
 import { router, Stack, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import {
   listConversations,
+  listReservedCompanies,
+  getOrCreateConversation,
   parseMessageTimestamp,
   ConversationItem,
   ConversationType,
+  ReservedCompanyItem,
 } from "../../src/api/message";
 
 const C = {
@@ -45,19 +48,25 @@ function formatTime(value: string | null) {
 export default function MessagesInbox() {
   const [tab, setTab] = useState<ConversationType>("USER");
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [reservedCompanies, setReservedCompanies] = useState<ReservedCompanyItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openingCompanyId, setOpeningCompanyId] = useState<number | null>(null);
 
   const load = useCallback(async (type: ConversationType) => {
-    try {
-      setLoading(true);
-      const result = await listConversations({ type });
-      setConversations(result.content);
-    } catch (e) {
-      console.log("대화 목록 조회 실패:", e);
-      setConversations([]);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+
+    const [conversationResult, companyResult] = await Promise.allSettled([
+      listConversations({ type }),
+      type === "COMPANY" ? listReservedCompanies() : Promise.resolve([]),
+    ]);
+
+    setConversations(
+        conversationResult.status === "fulfilled" ? conversationResult.value.content : []
+    );
+    setReservedCompanies(
+        companyResult.status === "fulfilled" ? companyResult.value : []
+    );
+    setLoading(false);
   }, []);
 
   useFocusEffect(
@@ -66,6 +75,20 @@ export default function MessagesInbox() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [tab])
   );
+
+  const openCompanyConversation = useCallback(async (companyId: number) => {
+    if (openingCompanyId !== null) return;
+
+    try {
+      setOpeningCompanyId(companyId);
+      const conversation = await getOrCreateConversation({ targetCompanyId: companyId });
+      router.push(`/messages/${conversation.conversationId}`);
+    } catch (e: any) {
+      Alert.alert("쪽지 시작 실패", e?.response?.data?.message || "잠시 후 다시 시도해주세요.");
+    } finally {
+      setOpeningCompanyId(null);
+    }
+  }, [openingCompanyId]);
 
   return (
       <SafeAreaView edges={["top"]} style={styles.container}>
@@ -95,7 +118,7 @@ export default function MessagesInbox() {
             <View style={styles.emptyBox}>
               <ActivityIndicator color={C.primary} />
             </View>
-        ) : conversations.length === 0 ? (
+        ) : conversations.length === 0 && (tab !== "COMPANY" || reservedCompanies.length === 0) ? (
             <View style={styles.emptyBox}>
               <Feather name="mail" size={40} color="#E2E8F0" />
               <Text style={styles.emptyText}>
@@ -107,6 +130,42 @@ export default function MessagesInbox() {
                 data={conversations}
                 keyExtractor={(item) => String(item.conversationId)}
                 contentContainerStyle={styles.list}
+                ListHeaderComponent={tab === "COMPANY" && reservedCompanies.length > 0 ? (
+                    <View style={styles.reservedSection}>
+                      <Text style={styles.sectionTitle}>예약한 업체</Text>
+                      <Text style={styles.sectionDescription}>예약 이력이 있는 업체에 바로 쪽지를 보낼 수 있어요.</Text>
+                      {reservedCompanies.map((company) => (
+                          <Pressable
+                              key={company.companyId}
+                              style={styles.reservedCard}
+                              disabled={openingCompanyId !== null}
+                              onPress={() => openCompanyConversation(company.companyId)}
+                          >
+                            <View style={styles.reservedIcon}>
+                              <Feather name="briefcase" size={18} color={C.primary} />
+                            </View>
+                            <View style={styles.reservedInfo}>
+                              <Text style={styles.cardName} numberOfLines={1}>{company.companyName}</Text>
+                              <Text style={styles.reservedMeta} numberOfLines={1}>
+                                {company.address || "업체 주소 정보 없음"}
+                              </Text>
+                            </View>
+                            {openingCompanyId === company.companyId ? (
+                                <ActivityIndicator size="small" color={C.primary} />
+                            ) : (
+                                <View style={styles.messageButton}>
+                                  <Feather name="message-circle" size={15} color="#fff" />
+                                  <Text style={styles.messageButtonText}>쪽지</Text>
+                                </View>
+                            )}
+                          </Pressable>
+                      ))}
+                      <Text style={styles.sectionTitle}>최근 쪽지</Text>
+                    </View>
+                ) : null}
+                ListEmptyComponent={tab === "COMPANY" ? (
+                    <Text style={styles.noConversationText}>아직 주고받은 쪽지가 없어요.</Text>
+                ) : null}
                 renderItem={({ item }) => (
                     <Pressable
                         style={styles.card}
@@ -193,6 +252,40 @@ const styles = StyleSheet.create({
   tabTextActive: { color: "#fff" },
 
   list: { padding: 16, gap: 10 },
+  reservedSection: { gap: 10, marginBottom: 8 },
+  sectionTitle: { fontSize: 15, fontWeight: "800", color: C.text, marginTop: 2 },
+  sectionDescription: { fontSize: 12, color: C.sub, marginTop: -4, marginBottom: 2 },
+  reservedCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: "#F5F3FF",
+    borderWidth: 1,
+    borderColor: C.primaryDim,
+  },
+  reservedIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reservedInfo: { flex: 1 },
+  reservedMeta: { fontSize: 12, color: C.sub, marginTop: 3 },
+  messageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 11,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: C.primary,
+  },
+  messageButtonText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  noConversationText: { textAlign: "center", color: "#94A3B8", paddingVertical: 24 },
   card: {
     flexDirection: "row",
     alignItems: "center",

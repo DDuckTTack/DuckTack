@@ -43,11 +43,7 @@ function CompanyReservationsPage() {
             const body = extractData(res.data);
             setList(Array.isArray(body) ? body : []);
         } catch (e) {
-            console.log("예약 조회 실패:", e);
-            if (e.response) {
-                console.log("서버 응답:", e.response.data);
-            }
-            alert("예약 조회 실패");
+            alert(e.response?.data?.message || "예약 조회 실패");
         } finally {
             setLoading(false);
         }
@@ -66,13 +62,7 @@ function CompanyReservationsPage() {
             await fetchReservations(selectedDate);
             alert(`상태 변경 완료: ${status}`);
         } catch (e) {
-            console.log("상태 변경 실패:", e);
-            if (e.response) {
-                console.log("서버 응답:", e.response.data);
-                alert(e.response.data?.message || "상태 변경 실패");
-            } else {
-                alert("상태 변경 실패");
-            }
+            alert(e.response?.data?.message || "상태 변경 실패");
         } finally {
             setSubmittingId(null);
         }
@@ -98,13 +88,7 @@ function CompanyReservationsPage() {
             await fetchReservations(selectedDate);
             alert("예약이 거절되었습니다.");
         } catch (e) {
-            console.log("예약 거절 실패:", e);
-            if (e.response) {
-                console.log("서버 응답:", e.response.data);
-                alert(e.response.data?.message || "예약 거절 실패");
-            } else {
-                alert("예약 거절 실패");
-            }
+            alert(e.response?.data?.message || "예약 거절 실패");
         } finally {
             setSubmittingId(null);
         }
@@ -121,13 +105,7 @@ function CompanyReservationsPage() {
             await fetchReservations(selectedDate);
             alert("노쇼 처리 완료");
         } catch (e) {
-            console.log("노쇼 처리 실패:", e);
-            if (e.response) {
-                console.log("서버 응답:", e.response.data);
-                alert(e.response.data?.message || "노쇼 처리 실패");
-            } else {
-                alert("노쇼 처리 실패");
-            }
+            alert(e.response?.data?.message || "노쇼 처리 실패");
         } finally {
             setSubmittingId(null);
         }
@@ -211,13 +189,7 @@ function CompanyReservationsPage() {
             await fetchReservations(selectedDate);
             alert("수리 완료 정보가 저장되었습니다.");
         } catch (e) {
-            console.log("완료 처리 실패:", e);
-            if (e.response) {
-                console.log("서버 응답:", e.response.data);
-                alert(e.response.data?.message || "완료 처리 실패");
-            } else {
-                alert("완료 처리 실패");
-            }
+            alert(e.response?.data?.message || "완료 처리 실패");
         } finally {
             setSubmittingId(null);
         }

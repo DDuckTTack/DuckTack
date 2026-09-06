@@ -9,6 +9,7 @@ import com.example.backend1.company.domain.Company;
 import com.example.backend1.history.repo.HistoryRepository;
 import com.example.backend1.history.service.HistoryEntity;
 import com.example.backend1.review.repo.ReviewRepository;
+import com.example.backend1.realtime.RealtimeEventPublisher;
 import com.example.backend1.user.domain.User;
 import com.example.backend1.user.repo.UserRepository;
 import jakarta.transaction.Transactional;
@@ -25,15 +26,18 @@ public class BiddingService {
     private final HistoryRepository historyRepository;
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public BiddingService(BidRequestRepository requestRepository, CompanyBidRepository bidRepository,
                           HistoryRepository historyRepository, UserRepository userRepository,
-                          ReviewRepository reviewRepository) {
+                          ReviewRepository reviewRepository,
+                          RealtimeEventPublisher realtimeEventPublisher) {
         this.requestRepository = requestRepository;
         this.bidRepository = bidRepository;
         this.historyRepository = historyRepository;
         this.userRepository = userRepository;
         this.reviewRepository = reviewRepository;
+        this.realtimeEventPublisher = realtimeEventPublisher;
     }
 
     public BiddingDtos.Item create(String username, BiddingDtos.CreateRequest req) {
@@ -54,6 +58,7 @@ public class BiddingService {
         if (address == null || address.isBlank()) throw new IllegalArgumentException("작업 주소가 필요합니다.");
         BidRequest saved = requestRepository.save(new BidRequest(
                 user, history, address, latitude, longitude, req.requestNote(), req.deadline(), req.maxDistanceKm()));
+        realtimeEventPublisher.publishBidChange("BID_REQUEST_CREATED", saved.getId());
         return toItem(saved, null, true);
     }
 
@@ -76,6 +81,7 @@ public class BiddingService {
                 .orElseThrow(() -> new IllegalArgumentException("입찰 요청을 찾을 수 없습니다."));
         request.expireIfNeeded();
         request.extendDeadline(minutes == null ? 0 : minutes);
+        realtimeEventPublisher.publishBidChange("BID_REQUEST_UPDATED", request.getId());
         return toItem(request, null, true);
     }
 
@@ -84,6 +90,7 @@ public class BiddingService {
                 .orElseThrow(() -> new IllegalArgumentException("입찰 요청을 찾을 수 없습니다."));
         request.expireIfNeeded();
         request.widenMaxDistanceKm(maxDistanceKm);
+        realtimeEventPublisher.publishBidChange("BID_REQUEST_UPDATED", request.getId());
         return toItem(request, null, true);
     }
 
@@ -94,6 +101,7 @@ public class BiddingService {
                 .filter(value -> value.getBidRequest().getId().equals(requestId))
                 .orElseThrow(() -> new IllegalArgumentException("업체 입찰을 찾을 수 없습니다."));
         request.select(bid.getCompany());
+        realtimeEventPublisher.publishBidChange("BID_SELECTED", request.getId());
         return new BiddingDtos.SelectResponse(requestId, bid.getCompany().getId(), bid.getCompany().getName(),
                 bid.getPrice(), request.getHistory().getId());
     }
@@ -131,6 +139,7 @@ public class BiddingService {
                 .orElseGet(() -> new CompanyBid(request, company, req.price(), req.message()));
         bid.update(req.price(), req.message());
         bid = bidRepository.save(bid);
+        realtimeEventPublisher.publishBidChange("BID_SUBMITTED", request.getId());
         return toOffer(bid, distance, request.getSelectedCompany());
     }
 

@@ -69,6 +69,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @EntityGraph(attributePaths = {"company", "user"})
     Optional<Reservation> findTopByUserUsernameOrderByIdDesc(String username);
 
+    @EntityGraph(attributePaths = {"company"})
     List<Reservation> findByUserUsernameOrderByIdDesc(String username);
 
     List<Reservation> findByUserIdOrderByVisitDateDescVisitTimeDesc(Long userId);

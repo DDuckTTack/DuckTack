@@ -10,8 +10,6 @@ function LoginPage() {
     const [password, setPassword] = useState("");
 
     const extractLoginPayload = (responseData) => {
-        console.log("🔥 원본 로그인 응답:", JSON.stringify(responseData, null, 2));
-
         const data = responseData?.data ?? responseData;
 
         const token =
@@ -39,7 +37,6 @@ function LoginPage() {
             token,
             role,
             companyId,
-            raw: responseData
         };
     };
 
@@ -47,12 +44,10 @@ function LoginPage() {
         const payload = extractLoginPayload(responseData);
 
         if (!payload.token) {
-            console.error("❌ token 없음. 실제 응답:", payload.raw);
             throw new Error("LOGIN_RESPONSE_TOKEN_MISSING");
         }
 
         if (!payload.role) {
-            console.error("❌ role 없음. 실제 응답:", payload.raw);
             throw new Error("LOGIN_RESPONSE_ROLE_MISSING");
         }
 
@@ -73,8 +68,6 @@ function LoginPage() {
     const login = async (e) => {
         if (e) e.preventDefault();
 
-        console.log("🔥 로그인 클릭됨");
-
         localStorage.removeItem("token");
         localStorage.removeItem("role");
         localStorage.removeItem("companyId");
@@ -85,8 +78,6 @@ function LoginPage() {
                 username,
                 password
             });
-
-            console.log("🔥 관리자 로그인 응답:", adminRes.data);
 
             const safeRole = saveLogin(adminRes.data);
 
@@ -112,7 +103,6 @@ function LoginPage() {
                 return;
             }
 
-            console.log("관리자 로그인 실패. 업체 로그인 시도");
         }
 
         // 2차: 업체 로그인 시도
@@ -121,8 +111,6 @@ function LoginPage() {
                 username,
                 password
             });
-
-            console.log("🔥 업체 로그인 응답:", companyRes.data);
 
             const safeRole = saveLogin(companyRes.data);
 
@@ -135,10 +123,7 @@ function LoginPage() {
             alert("업체 계정이 아닙니다.");
 
         } catch (companyErr) {
-            console.error("❌ 로그인 에러:", companyErr);
-
             if (companyErr.response) {
-                console.log("서버 응답:", companyErr.response.data);
                 alert(companyErr.response.data?.message || "로그인 실패");
             } else {
                 alert("서버 연결 실패");

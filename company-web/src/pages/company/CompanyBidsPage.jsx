@@ -1,6 +1,7 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "../../api/axios";
+import {subscribeRealtime} from "../../api/realtime";
 
 const unwrap = (response) => response?.data?.data ?? response?.data ?? response;
 const won = (value) => `${Number(value || 0).toLocaleString("ko-KR")}원`;
@@ -33,14 +34,19 @@ export default function CompanyBidsPage() {
     const [loading, setLoading] = useState(true);
     const [sendingId, setSendingId] = useState(null);
     const [, refreshClock] = useState(0);
+    const loadingRef = useRef(false);
+    const realtimeConnectedRef = useRef(false);
 
-    const load = async () => {
+    const load = async ({includeRadius = false} = {}) => {
+        if (loadingRef.current) return;
+        loadingRef.current = true;
         try {
-            const [itemsResponse, radiusResponse, resultsResponse] = await Promise.all([
+            const requests = [
                 axios.get("/api/company/bids"),
-                axios.get("/api/company/bids/settings/radius"),
                 axios.get("/api/company/bids/mine"),
-            ]);
+            ];
+            if (includeRadius) requests.push(axios.get("/api/company/bids/settings/radius"));
+            const [itemsResponse, resultsResponse, radiusResponse] = await Promise.all(requests);
             const nextItems = Array.isArray(unwrap(itemsResponse)) ? unwrap(itemsResponse) : [];
             setItems(nextItems);
             setDrafts((current) => {
@@ -53,19 +59,48 @@ export default function CompanyBidsPage() {
                 return next;
             });
             setResults(Array.isArray(unwrap(resultsResponse)) ? unwrap(resultsResponse) : []);
-            setRadius(Number(unwrap(radiusResponse)?.radiusKm || 10));
-        } catch (error) {
-            console.error("입찰 조회 실패", error);
+            if (radiusResponse) setRadius(Number(unwrap(radiusResponse)?.radiusKm || 10));
+        } catch {
+            // 일시적인 조회 실패는 다음 갱신 때 다시 시도합니다.
         } finally {
             setLoading(false);
+            loadingRef.current = false;
         }
     };
 
     useEffect(() => {
-        load();
-        const polling = setInterval(load, 10000);
+        load({includeRadius: true});
+        const poll = () => {
+            if (!document.hidden && navigator.onLine) load();
+        };
+        const handleVisibility = () => {
+            if (!document.hidden) poll();
+        };
+        const disconnect = subscribeRealtime({
+            destination: "/topic/bids",
+            onEvent: () => poll(),
+            onConnectionChange: (connected) => {
+                const reconnected = connected && !realtimeConnectedRef.current;
+                realtimeConnectedRef.current = connected;
+                if (reconnected) poll();
+            },
+        });
+        // WebSocket 장애가 오래 지속될 때만 최소 빈도로 동기화합니다.
+        const fallbackPolling = setInterval(() => {
+            if (!realtimeConnectedRef.current) poll();
+        }, 120000);
         const clock = setInterval(() => refreshClock((value) => value + 1), 30000);
-        return () => { clearInterval(polling); clearInterval(clock); };
+        document.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("online", poll);
+        return () => {
+            clearInterval(fallbackPolling);
+            clearInterval(clock);
+            disconnect();
+            document.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("online", poll);
+        };
+        // 최초 마운트 시에만 폴링을 설정합니다.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const updateDraft = (id, value) => setDrafts((current) => ({
@@ -153,7 +188,7 @@ export default function CompanyBidsPage() {
                 {loading ? <Empty text="입찰 요청을 불러오는 중입니다."/> :
                     items.length === 0 ? <Empty icon="📭" text="현재 수신 반경 안에 접수된 요청이 없습니다."/> :
                     <div style={s.grid}>{items.map((item) => <article style={s.card} key={item.id}>
-                        {item.imageUrl ? <img style={s.image} src={imageUrl(item.imageUrl)} alt="사용자 진단 사진"/>
+                        {item.imageUrl ? <img style={s.image} src={imageUrl(item.imageUrl)} alt="사용자 진단 사진" loading="lazy" decoding="async"/>
                             : <div style={s.noImage}><span>🖼️</span>진단 사진 없음</div>}
                         <div style={s.cardBody}>
                             <div style={s.cardTop}><div style={{display:"flex",gap:7,alignItems:"center"}}><span style={s.issueBadge}>{item.issueType}</span>

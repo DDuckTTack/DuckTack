@@ -202,7 +202,6 @@ DDuckTTack 제휴업체 드림
                 ...fallback
             });
         } catch (err) {
-            console.error("예약 상세 재조회 실패:", err);
 
             setDetail((prev) =>
                 prev && prev.id === id
@@ -253,10 +252,8 @@ DDuckTTack 제휴업체 드림
             const data = extractData(res.data);
             setDetail(data);
         } catch (err) {
-            console.error("상세 조회 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
             }
 
             alert("상세 조회 실패");
@@ -286,10 +283,8 @@ DDuckTTack 제휴업체 드림
 
             alert("예약을 수락했습니다. 고객 이메일을 확인할 수 있습니다.");
         } catch (err) {
-            console.error("예약 수락 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
                 alert(err.response.data?.message || "예약 수락 실패");
             } else {
                 alert("서버 연결 실패");
@@ -332,10 +327,8 @@ DDuckTTack 제휴업체 드림
 
             alert("예약이 거절되었습니다.");
         } catch (err) {
-            console.error("예약 거절 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
                 alert(err.response.data?.message || "예약 거절 실패");
             } else {
                 alert("서버 연결 실패");
@@ -410,10 +403,8 @@ DDuckTTack 제휴업체 드림
 
             alert("수리 완료 정보가 저장되었습니다.");
         } catch (err) {
-            console.error("완료 처리 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
                 alert(err.response.data?.message || "완료 처리 실패");
             } else {
                 alert("서버 연결 실패");
@@ -448,10 +439,8 @@ DDuckTTack 제휴업체 드림
 
             alert("예약이 대기 상태로 변경되었습니다.");
         } catch (err) {
-            console.error("대기 상태 변경 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
                 alert(err.response.data?.message || "대기 상태 변경 실패");
             } else {
                 alert("서버 연결 실패");
@@ -917,6 +906,8 @@ DDuckTTack 제휴업체 드림
                                     <img
                                         src={toImageSrc(r.imageUrl)}
                                         alt="진단 사진"
+                                        loading="lazy"
+                                        decoding="async"
                                         style={styles.thumbnailImage}
                                     />
                                 </div>
@@ -1003,6 +994,8 @@ DDuckTTack 제휴업체 드림
                             <img
                                 src={toImageSrc(detail.imageUrl)}
                                 alt="사용자 업로드 진단 사진"
+                                loading="lazy"
+                                decoding="async"
                                 style={styles.diagnosisImage}
                             />
                         </div>

@@ -10,6 +10,7 @@ import com.example.backend1.message.dto.MessageDtos;
 import com.example.backend1.message.repo.ConversationRepository;
 import com.example.backend1.message.repo.MessageReportRepository;
 import com.example.backend1.message.repo.MessageRepository;
+import com.example.backend1.realtime.RealtimeEventPublisher;
 import com.example.backend1.user.domain.User;
 import com.example.backend1.user.domain.UserRole;
 import com.example.backend1.user.repo.UserRepository;
@@ -33,17 +34,20 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final MessageReportRepository messageReportRepository;
     private final UserRepository userRepository;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public MessageService(
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             MessageReportRepository messageReportRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            RealtimeEventPublisher realtimeEventPublisher
     ) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.messageReportRepository = messageReportRepository;
         this.userRepository = userRepository;
+        this.realtimeEventPublisher = realtimeEventPublisher;
     }
 
     @Transactional
@@ -151,6 +155,9 @@ public class MessageService {
 
         String preview = content.length() > PREVIEW_MAX_LENGTH ? content.substring(0, PREVIEW_MAX_LENGTH) : content;
         conversation.recordMessage(preview, message.getCreatedAt());
+
+        realtimeEventPublisher.publishToUser(conversation.getUser1().getUsername(), "MESSAGE_CREATED", conversationId);
+        realtimeEventPublisher.publishToUser(conversation.getUser2().getUsername(), "MESSAGE_CREATED", conversationId);
 
         return toMessageItem(message, me.getId());
     }

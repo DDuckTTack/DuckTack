@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 
+const REVIEWS_PER_PAGE = 12;
+
 function formatCreatedAt(value) {
     if (value === null || value === undefined || value === "") {
         return "-";
@@ -49,6 +51,7 @@ export default function CompanyReviewsPage() {
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [sortType, setSortType] = useState("latest");
+    const [visibleCount, setVisibleCount] = useState(REVIEWS_PER_PAGE);
 
     const extractData = (responseData) => {
         return responseData?.data ?? responseData;
@@ -68,7 +71,6 @@ export default function CompanyReviewsPage() {
                 reviews: Array.isArray(data?.reviews) ? data.reviews : [],
             });
         } catch (err) {
-            console.error("업체 리뷰 조회 실패:", err);
 
             if (err.response?.status === 401) {
                 localStorage.clear();
@@ -107,6 +109,15 @@ export default function CompanyReviewsPage() {
             return bTime - aTime;
         });
     }, [summary.reviews, sortType]);
+
+    useEffect(() => {
+        setVisibleCount(REVIEWS_PER_PAGE);
+    }, [sortType, summary.reviews]);
+
+    const visibleReviews = useMemo(
+        () => sortedReviews.slice(0, visibleCount),
+        [sortedReviews, visibleCount]
+    );
 
     function getTime(value) {
         if (!value) return 0;
@@ -371,6 +382,17 @@ export default function CompanyReviewsPage() {
             fontWeight: "800",
             marginBottom: "18px",
         },
+        moreButton: {
+            display: "block",
+            margin: "22px auto 0",
+            padding: "12px 22px",
+            borderRadius: "12px",
+            border: "1px solid #CBD5E1",
+            backgroundColor: "#FFFFFF",
+            color: "#334155",
+            fontWeight: "900",
+            cursor: "pointer",
+        },
     };
 
     return (
@@ -438,7 +460,7 @@ export default function CompanyReviewsPage() {
                     </div>
 
                     <div style={styles.reviewGrid}>
-                        {sortedReviews.map((review) => (
+                        {visibleReviews.map((review) => (
                             <div key={review.id} style={styles.reviewCard}>
                                 <div style={styles.avatar}>
                                     {getInitial(review.authorUsername)}
@@ -466,6 +488,15 @@ export default function CompanyReviewsPage() {
                             </div>
                         ))}
                     </div>
+                    {visibleCount < sortedReviews.length ? (
+                        <button
+                            type="button"
+                            style={styles.moreButton}
+                            onClick={() => setVisibleCount((count) => count + REVIEWS_PER_PAGE)}
+                        >
+                            리뷰 더 보기 ({sortedReviews.length - visibleCount}개 남음)
+                        </button>
+                    ) : null}
                 </section>
             )}
         </div>
