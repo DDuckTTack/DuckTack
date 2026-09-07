@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # package-lock.json이 npm 11로 생성돼서 npm 10(Node 20·22)에서는
           # `npm ci`가 의존성 트리를 다르게 계산해 실패한다. npm 11이 들어있는 24로 맞춘다.
