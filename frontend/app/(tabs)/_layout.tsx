@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { View, Platform, StyleSheet } from "react-native";
+import { View, Platform, StyleSheet, type ColorValue } from "react-native";
 
 import MoreDrawer from "../../src/components/MoreDrawer";
 
@@ -69,7 +69,7 @@ export default function TabsLayout() {
   );
 }
 
-function TabIcon({ focused, color, name }: { focused: boolean; color: string; name: any }) {
+function TabIcon({ focused, color, name }: { focused: boolean; color: ColorValue; name: any }) {
   return (
     <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
       <Ionicons name={focused ? name : `${name}-outline`} size={22} color={color} />

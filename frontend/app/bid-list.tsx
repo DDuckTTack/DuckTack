@@ -1,9 +1,8 @@
 import {useCallback, useMemo, useState} from "react";
 import {ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View} from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
-import {Stack, router} from "expo-router";
+import {Stack, router, useFocusEffect} from "expo-router";
 import {Feather, Ionicons} from "@expo/vector-icons";
-import {useFocusEffect} from "@react-navigation/native";
 import {apiClient} from "../src/api/apiClient";
 
 const BLUE = "#4F46E5";

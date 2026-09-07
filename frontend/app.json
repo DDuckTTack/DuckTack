@@ -7,12 +7,16 @@
     "icon": "./assets/images/icon.png",
     "scheme": "dduckttackapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "하자 진단을 위해 사진 보관함 접근 권한이 필요합니다.",
-        "NSCameraUsageDescription": "하자 사진 촬영을 위해 카메라 접근 권한이 필요합니다."
+        "NSCameraUsageDescription": "하자 사진 촬영을 위해 카메라 접근 권한이 필요합니다.",
+        "NSLocalNetworkUsageDescription": "같은 Wi-Fi에 연결된 개발 서버와 통신하기 위해 로컬 네트워크를 사용합니다.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {
@@ -22,7 +26,6 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -59,7 +62,10 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-image",
+      "expo-sharing",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,

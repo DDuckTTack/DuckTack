@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View, Text, Pressable, Alert, StyleSheet, Linking } from "react-native";
 import { router, useLocalSearchParams, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 import { Feather, MaterialCommunityIcons, FontAwesome } from "@expo/vector-icons";
 
 import ScreenState from "../src/components/ScreenState";
