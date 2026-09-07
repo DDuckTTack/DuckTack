@@ -15,6 +15,9 @@ import {
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { clearAccessToken } from "../../src/store/tokenStorage";
 import { apiClient } from "../../src/api/apiClient";
+import { useRealtimeChannel } from "../../src/realtime/useRealtimeChannel";
+
+const FALLBACK_POLL_MS = 120000;
 
 // --- 먼지 알고리즘 상수 (보존) ---
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -310,7 +313,7 @@ export default function HomeTab() {
 
       setLatestReservation(body);
     } catch (e: any) {
-      console.log("❌ 최신 예약 조회 실패:", e?.message);
+      if (__DEV__) console.log("❌ 최신 예약 조회 실패:", e?.message);
       setLatestReservation(null);
     } finally {
       setReservationLoading(false);
@@ -323,13 +326,18 @@ export default function HomeTab() {
       }, [fetchLatestReservation])
   );
 
+  const reservationConnectionState = useRealtimeChannel("/user/queue/events", (event) => {
+    if (event.type === "RESERVATION_UPDATED") fetchLatestReservation();
+  });
+
   useEffect(() => {
     fetchLatestReservation();
 
-    const timer = setInterval(fetchLatestReservation, 15000);
+    if (reservationConnectionState === "connected") return;
 
+    const timer = setInterval(fetchLatestReservation, FALLBACK_POLL_MS);
     return () => clearInterval(timer);
-  }, [fetchLatestReservation]);
+  }, [fetchLatestReservation, reservationConnectionState]);
 
   const resetOverlay = useCallback(() => {
     clearedCellsRef.current = new Set();

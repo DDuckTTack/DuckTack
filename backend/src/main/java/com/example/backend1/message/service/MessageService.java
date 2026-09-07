@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class MessageService {
@@ -91,8 +93,14 @@ public class MessageService {
 
         Boolean companyOnly = parseCompanyFilter(type);
 
-        return conversationRepository.findMyConversations(me.getId(), companyOnly, pageable)
-                .map(c -> toItem(c, me.getId()));
+        Page<Conversation> page = conversationRepository.findMyConversations(me.getId(), companyOnly, pageable);
+
+        // 안읽음 개수는 대화별로 세지 않고 페이지 단위로 한 번에 집계한다.
+        Map<Long, Long> unreadByConversationId = countUnread(
+                page.getContent().stream().map(Conversation::getId).toList(), me.getId());
+
+        return page.map(c -> toItem(c, me.getId(),
+                unreadByConversationId.getOrDefault(c.getId(), 0L)));
     }
 
     private Boolean parseCompanyFilter(String type) {
@@ -132,7 +140,11 @@ public class MessageService {
             Collections.reverse(messages);
         }
 
-        conversation.markRead(me.getId());
+        // 증분 조회(afterId)에서 새 메시지가 없으면 읽음 시각을 갱신할 이유가 없다.
+        // 매번 갱신하면 변경 감지 때문에 조회만 해도 UPDATE가 나간다.
+        if (afterId == null || !messages.isEmpty()) {
+            conversation.markRead(me.getId());
+        }
 
         return messages.stream().map(m -> toMessageItem(m, me.getId())).toList();
     }
@@ -245,17 +257,31 @@ public class MessageService {
         return conversation;
     }
 
+    private Map<Long, Long> countUnread(List<Long> conversationIds, Long myUserId) {
+        if (conversationIds.isEmpty()) return Map.of();
+
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : messageRepository.countUnreadByConversationIds(conversationIds, myUserId)) {
+            counts.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+        }
+        return counts;
+    }
+
     private MessageDtos.ConversationItem toItem(Conversation conversation, Long myUserId) {
+        OffsetDateTime lastReadAt = conversation.myLastReadAt(myUserId);
+        long unreadCount = lastReadAt == null
+                ? messageRepository.countByConversationIdAndSenderIdNot(conversation.getId(), myUserId)
+                : messageRepository.countByConversationIdAndSenderIdNotAndCreatedAtAfter(conversation.getId(), myUserId, lastReadAt);
+
+        return toItem(conversation, myUserId, unreadCount);
+    }
+
+    private MessageDtos.ConversationItem toItem(Conversation conversation, Long myUserId, long unreadCount) {
         User other = conversation.otherUser(myUserId);
         boolean otherIsCompany = other.getRole() == UserRole.COMPANY;
         String displayName = otherIsCompany && other.getCompany() != null
                 ? other.getCompany().getName()
                 : other.getUsername();
-
-        OffsetDateTime lastReadAt = conversation.myLastReadAt(myUserId);
-        long unreadCount = lastReadAt == null
-                ? messageRepository.countByConversationIdAndSenderIdNot(conversation.getId(), myUserId)
-                : messageRepository.countByConversationIdAndSenderIdNotAndCreatedAtAfter(conversation.getId(), myUserId, lastReadAt);
 
         return new MessageDtos.ConversationItem(
                 conversation.getId(),

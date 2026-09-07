@@ -79,10 +79,12 @@ function pickBooleanAvailable(body: any): boolean {
     if (typeof body?.[key] === "boolean") return !body[key];
   }
 
-  console.warn(
-      "[중복검사] 사용 가능 여부를 해석할 수 없는 응답:",
-      JSON.stringify(body, null, 2)
-  );
+  if (__DEV__) {
+    console.warn(
+        "[중복검사] 사용 가능 여부를 해석할 수 없는 응답:",
+        JSON.stringify(body, null, 2)
+    );
+  }
 
   throw new Error("INVALID_AVAILABLE_RESPONSE");
 }
@@ -95,10 +97,12 @@ function pickBooleanFlag(body: any, fieldName: string): boolean {
   const value = data?.[fieldName] ?? body?.[fieldName];
 
   if (typeof value !== "boolean") {
-    console.warn(
-        `[${fieldName}] 응답 해석 실패:`,
-        JSON.stringify(body, null, 2)
-    );
+    if (__DEV__) {
+      console.warn(
+          `[${fieldName}] 응답 해석 실패:`,
+          JSON.stringify(body, null, 2)
+      );
+    }
     throw new Error(`INVALID_${fieldName.toUpperCase()}_RESPONSE`);
   }
 
@@ -135,17 +139,19 @@ export async function checkUsernameAvailable(username: string): Promise<boolean>
       params: { username: trimmed },
     });
 
-    console.log("[아이디 중복검사] 요청:", trimmed);
-    console.log("[아이디 중복검사] 응답:", JSON.stringify(res.data, null, 2));
+    if (__DEV__) console.log("[아이디 중복검사] 요청:", trimmed);
+    if (__DEV__) console.log("[아이디 중복검사] 응답:", JSON.stringify(res.data, null, 2));
 
     return pickBooleanAvailable(res.data);
   } catch (error: any) {
-    console.log("[아이디 중복검사] 실패:", {
-      username: trimmed,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[아이디 중복검사] 실패:", {
+        username: trimmed,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }
@@ -161,22 +167,26 @@ export async function checkPhoneAvailable(phoneNumber: string): Promise<boolean>
       params: { phoneNumber: normalized },
     });
 
-    console.log("[휴대폰 중복검사] 요청:", {
-      input: phoneNumber,
-      normalized,
-    });
+    if (__DEV__) {
+      console.log("[휴대폰 중복검사] 요청:", {
+        input: phoneNumber,
+        normalized,
+      });
+    }
 
-    console.log("[휴대폰 중복검사] 응답:", JSON.stringify(res.data, null, 2));
+    if (__DEV__) console.log("[휴대폰 중복검사] 응답:", JSON.stringify(res.data, null, 2));
 
     return pickBooleanAvailable(res.data);
   } catch (error: any) {
-    console.log("[휴대폰 중복검사] 실패:", {
-      input: phoneNumber,
-      normalized,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[휴대폰 중복검사] 실패:", {
+        input: phoneNumber,
+        normalized,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }
@@ -192,24 +202,28 @@ export async function checkEmailAvailable(email: string): Promise<boolean> {
       params: { email: normalized },
     });
 
-    console.log("[이메일 중복검사] 요청:", normalized);
-    console.log("[이메일 중복검사] 응답:", JSON.stringify(res.data, null, 2));
+    if (__DEV__) console.log("[이메일 중복검사] 요청:", normalized);
+    if (__DEV__) console.log("[이메일 중복검사] 응답:", JSON.stringify(res.data, null, 2));
 
     const available = pickBooleanAvailable(res.data);
 
-    console.log(
-        "[이메일 중복검사] 해석 결과:",
-        available ? "사용 가능" : "사용 불가"
-    );
+    if (__DEV__) {
+      console.log(
+          "[이메일 중복검사] 해석 결과:",
+          available ? "사용 가능" : "사용 불가"
+      );
+    }
 
     return available;
   } catch (error: any) {
-    console.log("[이메일 중복검사] 실패:", {
-      email: normalized,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[이메일 중복검사] 실패:", {
+        email: normalized,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }
@@ -219,20 +233,22 @@ export async function sendEmailVerificationCode(email: string): Promise<void> {
   const normalized = normalizeEmail(email);
 
   try {
-    console.log("[회원가입 이메일 인증] 발송 요청:", normalized);
+    if (__DEV__) console.log("[회원가입 이메일 인증] 발송 요청:", normalized);
 
     await apiClient.post("/api/auth/email/send-code", {
       email: normalized,
     });
 
-    console.log("[회원가입 이메일 인증] 발송 요청 성공:", normalized);
+    if (__DEV__) console.log("[회원가입 이메일 인증] 발송 요청 성공:", normalized);
   } catch (error: any) {
-    console.log("[회원가입 이메일 인증] 발송 실패:", {
-      email: normalized,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[회원가입 이메일 인증] 발송 실패:", {
+        email: normalized,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }
@@ -251,17 +267,19 @@ export async function verifyEmailCode(
       code: normalizedCode,
     });
 
-    console.log("[회원가입 이메일 인증] 인증 응답:", JSON.stringify(res.data, null, 2));
+    if (__DEV__) console.log("[회원가입 이메일 인증] 인증 응답:", JSON.stringify(res.data, null, 2));
 
     return pickBooleanFlag(res.data, "verified");
   } catch (error: any) {
-    console.log("[회원가입 이메일 인증] 인증 실패:", {
-      email: normalizedEmail,
-      code: normalizedCode,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[회원가입 이메일 인증] 인증 실패:", {
+        email: normalizedEmail,
+        code: normalizedCode,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }
@@ -271,21 +289,23 @@ export async function sendPasswordResetCode(email: string): Promise<void> {
   const normalized = normalizeEmail(email);
 
   try {
-    console.log("[비밀번호 재설정] 인증코드 발송 요청:", normalized);
+    if (__DEV__) console.log("[비밀번호 재설정] 인증코드 발송 요청:", normalized);
 
     await apiClient.post("/api/auth/password/send-reset-code", {
       email: normalized,
     });
 
-    console.log("[비밀번호 재설정] 인증코드 발송 요청 성공:", normalized);
+    if (__DEV__) console.log("[비밀번호 재설정] 인증코드 발송 요청 성공:", normalized);
   } catch (error: any) {
-    console.log("[비밀번호 재설정] 인증코드 발송 실패:", {
-      email: normalized,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-      url: error?.config?.url,
-    });
+    if (__DEV__) {
+      console.log("[비밀번호 재설정] 인증코드 발송 실패:", {
+        email: normalized,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        url: error?.config?.url,
+      });
+    }
 
     throw error;
   }
@@ -304,17 +324,19 @@ export async function verifyPasswordResetCode(
       code: normalizedCode,
     });
 
-    console.log("[비밀번호 재설정] 인증코드 확인 응답:", JSON.stringify(res.data, null, 2));
+    if (__DEV__) console.log("[비밀번호 재설정] 인증코드 확인 응답:", JSON.stringify(res.data, null, 2));
 
     return pickBooleanFlag(res.data, "verified");
   } catch (error: any) {
-    console.log("[비밀번호 재설정] 인증코드 확인 실패:", {
-      email: normalizedEmail,
-      code: normalizedCode,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[비밀번호 재설정] 인증코드 확인 실패:", {
+        email: normalizedEmail,
+        code: normalizedCode,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }
@@ -334,18 +356,22 @@ export async function resetPassword(req: {
       newPassword: req.newPassword,
     });
 
-    console.log("[비밀번호 재설정] 비밀번호 변경 성공:", {
-      username: req.username.trim(),
-      email: normalizeEmail(req.email),
-    });
+    if (__DEV__) {
+      console.log("[비밀번호 재설정] 비밀번호 변경 성공:", {
+        username: req.username.trim(),
+        email: normalizeEmail(req.email),
+      });
+    }
   } catch (error: any) {
-    console.log("[비밀번호 재설정] 비밀번호 변경 실패:", {
-      username: req.username.trim(),
-      email: normalizeEmail(req.email),
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[비밀번호 재설정] 비밀번호 변경 실패:", {
+        username: req.username.trim(),
+        email: normalizeEmail(req.email),
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }
@@ -360,14 +386,16 @@ export async function signup(req: SignupRequest): Promise<void> {
   const normalizedEmail = normalizeEmail(req.email);
 
   try {
-    console.log("[회원가입] 요청:", {
-      username: req.username.trim(),
-      email: normalizedEmail,
-      phoneNumber: normalizedPhone,
-      residenceType: req.residenceType,
-      rentType: req.rentType,
-      address: req.address?.trim() || "",
-    });
+    if (__DEV__) {
+      console.log("[회원가입] 요청:", {
+        username: req.username.trim(),
+        email: normalizedEmail,
+        phoneNumber: normalizedPhone,
+        residenceType: req.residenceType,
+        rentType: req.rentType,
+        address: req.address?.trim() || "",
+      });
+    }
 
     await apiClient.post("/api/auth/signup", {
       username: req.username.trim(),
@@ -384,20 +412,24 @@ export async function signup(req: SignupRequest): Promise<void> {
       marketingAgreed: false,
     });
 
-    console.log("[회원가입] 성공:", {
-      username: req.username.trim(),
-      email: normalizedEmail,
-      phoneNumber: normalizedPhone,
-    });
+    if (__DEV__) {
+      console.log("[회원가입] 성공:", {
+        username: req.username.trim(),
+        email: normalizedEmail,
+        phoneNumber: normalizedPhone,
+      });
+    }
   } catch (error: any) {
-    console.log("[회원가입] 실패:", {
-      username: req.username.trim(),
-      email: normalizedEmail,
-      phoneNumber: normalizedPhone,
-      message: error?.message,
-      status: error?.response?.status,
-      data: error?.response?.data,
-    });
+    if (__DEV__) {
+      console.log("[회원가입] 실패:", {
+        username: req.username.trim(),
+        email: normalizedEmail,
+        phoneNumber: normalizedPhone,
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+    }
 
     throw error;
   }

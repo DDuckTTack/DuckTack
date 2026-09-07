@@ -29,6 +29,7 @@ import {
   MessageItem,
   ReportReason,
 } from "../../src/api/message";
+import { useRealtimeChannel } from "../../src/realtime/useRealtimeChannel";
 
 const C = {
   primary: "#4F46E5",
@@ -41,7 +42,7 @@ const C = {
   danger: "#EF4444",
 };
 
-const POLL_INTERVAL_MS = 1000;
+const FALLBACK_POLL_MS = 120000;
 
 function formatTime(value: string | null) {
   const date = parseMessageTimestamp(value);
@@ -84,7 +85,7 @@ export default function MessageThread() {
           lastIdRef.current = initialMessages[initialMessages.length - 1].id;
         }
       } catch (e) {
-        console.log("대화 조회 실패:", e);
+        if (__DEV__) console.log("대화 조회 실패:", e);
         Alert.alert("불러오기 실패", "대화를 가져오지 못했습니다.");
         router.back();
       } finally {
@@ -95,22 +96,39 @@ export default function MessageThread() {
   }, [conversationId]);
 
   const poll = useCallback(async () => {
-    if (lastIdRef.current === null) return;
     try {
+      // 대화가 비어있는 상태로 들어오면 기준 id가 없다. 이때 증분 조회를 건너뛰면
+      // 첫 메시지가 도착해도 화면에 영영 안 뜨므로, 기준 id가 없을 땐 전체를 다시 읽는다.
+      if (lastIdRef.current === null) {
+        const initial = await listMessages(conversationId);
+        if (initial.length > 0) {
+          setMessages(initial);
+          lastIdRef.current = initial[initial.length - 1].id;
+        }
+        return;
+      }
+
       const newMessages = await listMessages(conversationId, { afterId: lastIdRef.current });
       if (newMessages.length > 0) {
         setMessages((prev) => [...prev, ...newMessages]);
         lastIdRef.current = newMessages[newMessages.length - 1].id;
       }
     } catch (e) {
-      console.log("쪽지 폴링 실패:", e);
+      if (__DEV__) console.log("쪽지 폴링 실패:", e);
     }
   }, [conversationId]);
 
+  const connectionState = useRealtimeChannel("/user/queue/events", (event) => {
+    if (event.type === "MESSAGE_CREATED" && String(event.resourceId) === String(conversationId)) {
+      poll();
+    }
+  });
+
   useEffect(() => {
-    const timer = setInterval(poll, POLL_INTERVAL_MS);
+    if (connectionState === "connected") return;
+    const timer = setInterval(poll, FALLBACK_POLL_MS);
     return () => clearInterval(timer);
-  }, [poll]);
+  }, [poll, connectionState]);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -135,7 +153,7 @@ export default function MessageThread() {
       lastIdRef.current = sent.id;
       setInput("");
     } catch (e: any) {
-      console.log("쪽지 전송 실패:", e);
+      if (__DEV__) console.log("쪽지 전송 실패:", e);
       Alert.alert("전송 실패", e?.response?.data?.message || "다시 시도해주세요.");
     } finally {
       setSending(false);
@@ -181,7 +199,7 @@ export default function MessageThread() {
       setSelectionMode(false);
       setSelectedIds(new Set());
     } catch (e: any) {
-      console.log("쪽지 신고 실패:", e);
+      if (__DEV__) console.log("쪽지 신고 실패:", e);
       Alert.alert("신고 실패", e?.response?.data?.message || "다시 시도해주세요.");
     } finally {
       setReportSubmitting(false);

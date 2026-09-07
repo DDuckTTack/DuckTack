@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { Redirect, router, Stack, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const C = {
@@ -130,16 +130,20 @@ export default function Signup() {
       normalizedPhone.length === 11 &&
       normalizedPhone.startsWith("010");
 
+  // 동의 화면을 거치지 않고 들어온 경우 되돌려보낸다.
+  // effect 안에서 router.replace를 호출하면, 딥링크·새로고침으로 이 화면에 바로 진입했을 때
+  // 자식 effect가 루트 네비게이터 등록보다 먼저 실행돼 "Attempted to navigate before mounting
+  // the Root Layout" 에러로 화면이 깨진다. 이동은 선언형 <Redirect>에 맡긴다.
+  const needsConsent = consent !== "1";
+
   useEffect(() => {
-    if (consent === "1") return;
+    if (!needsConsent) return;
 
     Alert.alert(
         "동의 필요",
         "개인정보 동의 화면을 먼저 완료한 뒤 회원가입을 진행해주세요."
     );
-
-    router.replace("/signup-consent");
-  }, [consent]);
+  }, [needsConsent]);
 
   const handleCheckUsername = async () => {
     if (!trimmedUsername) {
@@ -449,6 +453,10 @@ export default function Signup() {
       setIsSubmitting(false);
     }
   };
+
+  if (needsConsent) {
+    return <Redirect href="/signup-consent" />;
+  }
 
   return (
       <KeyboardAvoidingView
