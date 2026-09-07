@@ -49,7 +49,7 @@ jobs:
       # 실패했을 때 어느 테스트가 왜 깨졌는지 봐야 하므로 리포트를 남긴다.
       - name: 테스트 리포트 업로드
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-test-report
           path: backend/build/reports/tests/test
