@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.TestPropertySource;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=none")
+// ddl-auto는 application.yml의 update를 그대로 쓴다. none으로 두면 스키마가 이미 있는 DB에서만
+// 통과해서, 빈 DB(CI)에서는 다른 테스트가 먼저 스키마를 만들어줬는지에 따라 결과가 달라진다.
 class ReviewAggregateQueryTest {
 
     @Autowired private UserRepository userRepository;

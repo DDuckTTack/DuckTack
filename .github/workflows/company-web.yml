@@ -1,0 +1,38 @@
+name: company-web
+
+on:
+  pull_request:
+    paths:
+      - "company-web/**"
+      - ".github/workflows/company-web.yml"
+  push:
+    branches: [develop, main]
+    paths:
+      - "company-web/**"
+      - ".github/workflows/company-web.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: company-web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: company-web/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 빌드
+        # CRA는 CI=true면 경고도 에러로 처리한다. 기존 경고 때문에 바로 빨개지는 걸 피하려고
+        # 우선 꺼둔다. 경고를 정리한 뒤 이 줄을 지우면 경고까지 잡아준다.
+        env:
+          CI: false
+        run: npm run build
