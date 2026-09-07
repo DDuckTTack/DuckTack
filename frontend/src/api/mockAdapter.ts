@@ -96,7 +96,7 @@ export async function mockAdapter(config: AxiosRequestConfig): Promise<AxiosResp
   const method = (config.method ?? "get").toLowerCase() as Matcher["method"];
   const url = buildUrl(config);
 
-  console.log(`🧪 [MOCK] ${method.toUpperCase()} ${url}`);
+  if (__DEV__) console.log(`🧪 [MOCK] ${method.toUpperCase()} ${url}`);
 
   // 네트워크처럼 약간의 지연을 줘서 로딩 UI도 확인 가능하게 함
   await new Promise((resolve) => setTimeout(resolve, 350));
@@ -110,7 +110,7 @@ export async function mockAdapter(config: AxiosRequestConfig): Promise<AxiosResp
     }
   }
 
-  console.log(`🧪 [MOCK] 매칭되는 라우트가 없음 → 404 반환: ${url}`);
+  if (__DEV__) console.log(`🧪 [MOCK] 매칭되는 라우트가 없음 → 404 반환: ${url}`);
 
   const error: any = new Error(`[MOCK] No route for ${method.toUpperCase()} ${url}`);
   error.response = { status: 404, data: { message: "Mock: route not found", url }, headers: {}, config };

@@ -9,13 +9,16 @@ import com.example.backend1.company.domain.Company;
 import com.example.backend1.history.repo.HistoryRepository;
 import com.example.backend1.history.service.HistoryEntity;
 import com.example.backend1.review.repo.ReviewRepository;
+import com.example.backend1.realtime.RealtimeEventPublisher;
 import com.example.backend1.user.domain.User;
 import com.example.backend1.user.repo.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -25,15 +28,18 @@ public class BiddingService {
     private final HistoryRepository historyRepository;
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public BiddingService(BidRequestRepository requestRepository, CompanyBidRepository bidRepository,
                           HistoryRepository historyRepository, UserRepository userRepository,
-                          ReviewRepository reviewRepository) {
+                          ReviewRepository reviewRepository,
+                          RealtimeEventPublisher realtimeEventPublisher) {
         this.requestRepository = requestRepository;
         this.bidRepository = bidRepository;
         this.historyRepository = historyRepository;
         this.userRepository = userRepository;
         this.reviewRepository = reviewRepository;
+        this.realtimeEventPublisher = realtimeEventPublisher;
     }
 
     public BiddingDtos.Item create(String username, BiddingDtos.CreateRequest req) {
@@ -54,6 +60,7 @@ public class BiddingService {
         if (address == null || address.isBlank()) throw new IllegalArgumentException("작업 주소가 필요합니다.");
         BidRequest saved = requestRepository.save(new BidRequest(
                 user, history, address, latitude, longitude, req.requestNote(), req.deadline(), req.maxDistanceKm()));
+        realtimeEventPublisher.publishBidChange("BID_REQUEST_CREATED", saved.getId());
         return toItem(saved, null, true);
     }
 
@@ -76,6 +83,7 @@ public class BiddingService {
                 .orElseThrow(() -> new IllegalArgumentException("입찰 요청을 찾을 수 없습니다."));
         request.expireIfNeeded();
         request.extendDeadline(minutes == null ? 0 : minutes);
+        realtimeEventPublisher.publishBidChange("BID_REQUEST_UPDATED", request.getId());
         return toItem(request, null, true);
     }
 
@@ -84,6 +92,7 @@ public class BiddingService {
                 .orElseThrow(() -> new IllegalArgumentException("입찰 요청을 찾을 수 없습니다."));
         request.expireIfNeeded();
         request.widenMaxDistanceKm(maxDistanceKm);
+        realtimeEventPublisher.publishBidChange("BID_REQUEST_UPDATED", request.getId());
         return toItem(request, null, true);
     }
 
@@ -94,6 +103,7 @@ public class BiddingService {
                 .filter(value -> value.getBidRequest().getId().equals(requestId))
                 .orElseThrow(() -> new IllegalArgumentException("업체 입찰을 찾을 수 없습니다."));
         request.select(bid.getCompany());
+        realtimeEventPublisher.publishBidChange("BID_SELECTED", request.getId());
         return new BiddingDtos.SelectResponse(requestId, bid.getCompany().getId(), bid.getCompany().getName(),
                 bid.getPrice(), request.getHistory().getId());
     }
@@ -131,7 +141,11 @@ public class BiddingService {
                 .orElseGet(() -> new CompanyBid(request, company, req.price(), req.message()));
         bid.update(req.price(), req.message());
         bid = bidRepository.save(bid);
-        return toOffer(bid, distance, request.getSelectedCompany());
+        realtimeEventPublisher.publishBidChange("BID_SUBMITTED", request.getId());
+        realtimeEventPublisher.publishToUser(request.getUser().getUsername(), "BID_SUBMITTED", request.getId());
+        ReviewStat stat = loadReviewStats(List.of(company.getId()))
+                .getOrDefault(company.getId(), ReviewStat.EMPTY);
+        return toOffer(bid, distance, request.getSelectedCompany(), stat);
     }
 
     public List<BiddingDtos.CompanyResult> companyResults(String username) {
@@ -162,10 +176,8 @@ public class BiddingService {
             request.expireIfNeeded();
             HistoryEntity history = request.getHistory();
             String imageUrl = history.getDiagnosisResult() == null ? null : history.getDiagnosisResult().getImageUrl();
-            List<BiddingDtos.Offer> offers = bidRepository.findByBidRequestIdOrderByPriceAsc(request.getId()).stream()
-                    .map(bid -> toOffer(bid, distanceKm(request.getLatitude(), request.getLongitude(),
-                            bid.getCompany().getLatitude(), bid.getCompany().getLongitude()), request.getSelectedCompany()))
-                    .toList();
+            List<BiddingDtos.Offer> offers =
+                    buildOffers(bidRepository.findByBidRequestIdOrderByPriceAsc(request.getId()), request);
             Company selected = request.getSelectedCompany();
             return new BiddingDtos.AdminItem(request.getId(), history.getId(), request.getUser().getId(),
                     request.getUser().getUsername(), imageUrl, history.getIssueType().name(), history.getRiskScore(),
@@ -184,10 +196,7 @@ public class BiddingService {
         HistoryEntity history = request.getHistory();
         String imageUrl = history.getDiagnosisResult() == null ? null : history.getDiagnosisResult().getImageUrl();
         List<BiddingDtos.Offer> offers = includeOffers
-                ? bidRepository.findByBidRequestIdOrderByPriceAsc(request.getId()).stream()
-                    .map(b -> toOffer(b, distanceKm(request.getLatitude(), request.getLongitude(),
-                            b.getCompany().getLatitude(), b.getCompany().getLongitude()), request.getSelectedCompany()))
-                    .toList()
+                ? buildOffers(bidRepository.findByBidRequestIdOrderByPriceAsc(request.getId()), request)
                 : List.of();
         CompanyBid myBid = viewingCompany == null ? null
                 : bidRepository.findByBidRequestIdAndCompanyId(request.getId(), viewingCompany.getId()).orElse(null);
@@ -200,15 +209,44 @@ public class BiddingService {
                 myBid == null ? null : myBid.getMessage());
     }
 
-    private BiddingDtos.Offer toOffer(CompanyBid bid, Double distance, Company selected) {
+    /**
+     * 업체별 평점은 리뷰 전체를 읽어오지 않고 집계 쿼리 한 번으로 계산한다.
+     * (입찰 상세는 웹소켓 이벤트마다 재조회되는 경로라 offer 수만큼 리뷰를 조회하면 부하가 크다.)
+     */
+    private List<BiddingDtos.Offer> buildOffers(List<CompanyBid> bids, BidRequest request) {
+        if (bids.isEmpty()) return List.of();
+
+        Map<Long, ReviewStat> statsByCompanyId = loadReviewStats(
+                bids.stream().map(b -> b.getCompany().getId()).distinct().toList());
+
+        return bids.stream()
+                .map(b -> toOffer(b, distanceKm(request.getLatitude(), request.getLongitude(),
+                                b.getCompany().getLatitude(), b.getCompany().getLongitude()),
+                        request.getSelectedCompany(),
+                        statsByCompanyId.getOrDefault(b.getCompany().getId(), ReviewStat.EMPTY)))
+                .toList();
+    }
+
+    private Map<Long, ReviewStat> loadReviewStats(List<Long> companyIds) {
+        if (reviewRepository == null || companyIds.isEmpty()) return Map.of();
+
+        Map<Long, ReviewStat> stats = new HashMap<>();
+        for (Object[] row : reviewRepository.aggregateByCompanyIds(companyIds)) {
+            stats.put(((Number) row[0]).longValue(),
+                    new ReviewStat(((Number) row[1]).doubleValue(), ((Number) row[2]).intValue()));
+        }
+        return stats;
+    }
+
+    private BiddingDtos.Offer toOffer(CompanyBid bid, Double distance, Company selected, ReviewStat stat) {
         Company c = bid.getCompany();
-        var reviews = reviewRepository == null ? List.<com.example.backend1.review.domain.Review>of()
-                : reviewRepository.findByCompanyIdOrderByCreatedAtDesc(c.getId());
-        double avg = reviews.stream().mapToInt(com.example.backend1.review.domain.Review::getRating)
-                .average().orElse(0.0);
         return new BiddingDtos.Offer(bid.getId(), c.getId(), c.getName(), c.getPhone(), c.getAddressLine(),
-                distance, Math.round(avg * 10.0) / 10.0, reviews.size(), bid.getPrice(), bid.getMessage(), bid.getCreatedAt(),
-                selected != null && selected.getId().equals(c.getId()));
+                distance, Math.round(stat.average() * 10.0) / 10.0, stat.count(), bid.getPrice(), bid.getMessage(),
+                bid.getCreatedAt(), selected != null && selected.getId().equals(c.getId()));
+    }
+
+    private record ReviewStat(double average, int count) {
+        static final ReviewStat EMPTY = new ReviewStat(0.0, 0);
     }
 
     private User requireUser(String username) {

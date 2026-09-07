@@ -45,6 +45,7 @@ public class SecurityConfig {
                                 "/storage/**",
                                 "/api/files/**",
                                 "/api/dev/**",
+                                "/ws/**",
                                 "/api/products/**",
                                 "/api/company/auth/**"
                         ).permitAll()

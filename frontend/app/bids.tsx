@@ -7,6 +7,9 @@ import {apiClient} from "../src/api/apiClient";
 import {getMe} from "../src/api/users";
 import AddressSearchModal from "../src/components/AddressSearchModal";
 import {AddressResult} from "../src/api/addresses";
+import {useRealtimeChannel} from "../src/realtime/useRealtimeChannel";
+
+const FALLBACK_POLL_MS = 120000;
 
 const BLUE = "#4F46E5";
 const durations = [
@@ -67,9 +70,24 @@ export default function BidsPage() {
       return;
     }
     load();
-    const poll = setInterval(() => load(), 5000);
-    return () => clearInterval(poll);
   }, [p.bidRequestId]);
+
+  // /topic/bids는 전체 입찰이 흐르는 브로드캐스트라 업체 대시보드용이고,
+  // 앱은 내 요청에 들어온 입찰만 알면 되므로 개인 큐만 구독한다.
+  const connectionState = useRealtimeChannel(
+    p.bidRequestId ? "/user/queue/events" : null,
+    (event) => {
+      if (event.type === "BID_SUBMITTED" && String(event.resourceId) === String(p.bidRequestId)) {
+        load();
+      }
+    }
+  );
+
+  useEffect(() => {
+    if (!p.bidRequestId || connectionState === "connected") return;
+    const poll = setInterval(() => load(), FALLBACK_POLL_MS);
+    return () => clearInterval(poll);
+  }, [p.bidRequestId, connectionState]);
 
   useEffect(() => {
     const clock = setInterval(() => tick(v => v + 1), 30000);
@@ -165,7 +183,7 @@ export default function BidsPage() {
       {!request ? <>
         <Text style={s.title}>원하는 시간 동안{"\n"}여러 업체의 가격을 받아보세요</Text>
         <Text style={s.sub}>진단 사진과 결과가 업체에 함께 전달됩니다.</Text>
-        {p.imageUrl ? <Image source={{uri:String(p.imageUrl)}} style={s.hero}/> : <View style={s.noImage}>진단 사진이 함께 전송됩니다.</View>}
+        {p.imageUrl ? <Image source={{uri:String(p.imageUrl)}} style={s.hero}/> : <View style={s.noImage}><Text style={s.noImageText}>진단 사진이 함께 전송됩니다.</Text></View>}
         <Text style={s.label}>입찰 받을 시간</Text>
         <View style={s.chips}>{durations.map(v => <Pressable key={v.minutes} onPress={() => setMinutes(v.minutes)}
           style={[s.chip, minutes === v.minutes && s.chipOn]}><Text style={[s.chipText, minutes === v.minutes && s.chipTextOn]}>{v.label}</Text></Pressable>)}</View>
@@ -249,7 +267,7 @@ const s=StyleSheet.create({
   safe:{flex:1,backgroundColor:"#F8FAFC"},center:{flex:1,alignItems:"center",justifyContent:"center"},header:{height:62,paddingHorizontal:18,flexDirection:"row",alignItems:"center",justifyContent:"space-between",backgroundColor:"#fff"},
   back:{width:42,height:42,borderRadius:21,backgroundColor:"#EEF2FF",alignItems:"center",justifyContent:"center"},headerTitle:{fontSize:19,fontWeight:"800",color:"#0F172A"},
   content:{padding:20,paddingBottom:50},title:{fontSize:27,lineHeight:37,fontWeight:"900",color:"#0F172A"},sub:{color:"#64748B",fontSize:15,marginTop:8,marginBottom:20},
-  hero:{width:"100%",height:210,borderRadius:18,marginBottom:22},noImage:{height:110,borderRadius:18,backgroundColor:"#EEF2F7",alignItems:"center",justifyContent:"center",color:"#64748B",marginBottom:22},
+  hero:{width:"100%",height:210,borderRadius:18,marginBottom:22},noImage:{height:110,borderRadius:18,backgroundColor:"#EEF2F7",alignItems:"center",justifyContent:"center",marginBottom:22},noImageText:{color:"#64748B"},
   label:{fontSize:15,fontWeight:"800",color:"#1E293B",marginTop:18,marginBottom:9},chips:{flexDirection:"row",flexWrap:"wrap",gap:8},chip:{paddingVertical:10,paddingHorizontal:16,borderRadius:99,backgroundColor:"#fff",borderWidth:1,borderColor:"#CBD5E1"},
   chipOn:{backgroundColor:"#EEF2FF",borderColor:BLUE},chipText:{fontWeight:"700",color:"#475569"},chipTextOn:{color:BLUE},input:{backgroundColor:"#fff",borderWidth:1,borderColor:"#CBD5E1",borderRadius:13,padding:14,fontSize:15},multi:{height:100,textAlignVertical:"top"},
   addressButton:{minHeight:50,flexDirection:"row",alignItems:"center",gap:9,backgroundColor:"#fff",borderWidth:1,borderColor:"#A5B4FC",borderRadius:13,paddingHorizontal:14},
