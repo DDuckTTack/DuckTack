@@ -1,0 +1,35 @@
+version: 2
+
+# 저장소에 취약점 경고가 쌓여 있어(critical 포함) 업데이트 PR을 자동으로 받아본다.
+# 한 번에 쏟아지면 리뷰가 불가능하므로 주 1회, 디렉터리당 PR 개수를 제한한다.
+updates:
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    # Expo는 SDK 버전에 맞는 패키지 조합을 요구해서, 개별 메이저 업데이트가 오히려 앱을 깨뜨린다.
+    # 메이저는 사람이 판단하고 여기서는 보안/패치성 업데이트만 받는다.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /company-web
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
