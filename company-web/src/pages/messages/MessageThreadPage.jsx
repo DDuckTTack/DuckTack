@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getConversation, listMessages, reportMessage, sendMessage } from "../../api/messages";
 import ReportModal from "../../components/community/ReportModal";
+import { subscribeRealtime } from "../../api/realtime";
 
-const POLL_INTERVAL_MS = 1000;
+const FALLBACK_POLL_INTERVAL_MS = 120000;
 
 function formatTime(value) {
     // backend sends OffsetDateTime as epoch seconds (with fractional nanos) instead of
@@ -27,6 +28,8 @@ export default function MessageThreadPage() {
     const bottomRef = useRef(null);
     const lastIdRef = useRef(null);
     const pollTimerRef = useRef(null);
+    const pollingRef = useRef(false);
+    const realtimeConnectedRef = useRef(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -57,20 +60,50 @@ export default function MessageThreadPage() {
 
     useEffect(() => {
         const poll = async () => {
-            if (document.hidden || lastIdRef.current === null) return;
+            if (document.hidden || !navigator.onLine || pollingRef.current) return;
+            pollingRef.current = true;
             try {
-                const fresh = await listMessages(threadId, { afterId: lastIdRef.current });
+                const options = lastIdRef.current === null ? {} : { afterId: lastIdRef.current };
+                const fresh = await listMessages(threadId, options);
                 if (fresh.length > 0) {
-                    setMessages((prev) => [...prev, ...fresh]);
+                    setMessages((prev) => {
+                        const known = new Set(prev.map((message) => message.id));
+                        return [...prev, ...fresh.filter((message) => !known.has(message.id))];
+                    });
                     lastIdRef.current = fresh[fresh.length - 1].id;
                 }
             } catch {
                 // transient polling failure — retry on next tick
+            } finally {
+                pollingRef.current = false;
             }
         };
 
-        pollTimerRef.current = setInterval(poll, POLL_INTERVAL_MS);
-        return () => clearInterval(pollTimerRef.current);
+        const disconnect = subscribeRealtime({
+            destination: "/user/queue/events",
+            onEvent: (event) => {
+                if (event?.type === "MESSAGE_CREATED" && String(event.resourceId) === String(threadId)) poll();
+            },
+            onConnectionChange: (connected) => {
+                const reconnected = connected && !realtimeConnectedRef.current;
+                realtimeConnectedRef.current = connected;
+                if (reconnected) poll();
+            },
+        });
+        pollTimerRef.current = setInterval(() => {
+            if (!realtimeConnectedRef.current) poll();
+        }, FALLBACK_POLL_INTERVAL_MS);
+        const handleVisibility = () => {
+            if (!document.hidden) poll();
+        };
+        document.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("online", poll);
+        return () => {
+            clearInterval(pollTimerRef.current);
+            disconnect();
+            document.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("online", poll);
+        };
     }, [threadId]);
 
     useEffect(() => {

@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listConversations } from "../../api/messages";
+import { subscribeRealtime } from "../../api/realtime";
+
+const FALLBACK_SYNC_INTERVAL_MS = 120000;
 
 function formatTime(value) {
     if (!value) return "";
@@ -22,27 +25,53 @@ export default function MessagesInboxPage() {
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState("");
+    const realtimeConnectedRef = useRef(false);
+    const loadingRef = useRef(false);
+
+    const loadConversations = useCallback(async ({ showLoading = false } = {}) => {
+        if (loadingRef.current || document.hidden || !navigator.onLine) return;
+        loadingRef.current = true;
+        if (showLoading) setLoading(true);
+        setErrorMessage("");
+        try {
+            const res = await listConversations({ type: filterType || undefined, size: 50 });
+            setConversations(res.content ?? []);
+        } catch (err) {
+            setErrorMessage(err.response?.data?.message || "쪽지함을 불러오지 못했습니다.");
+        } finally {
+            loadingRef.current = false;
+            setLoading(false);
+        }
+    }, [filterType]);
 
     useEffect(() => {
-        let cancelled = false;
-        setLoading(true);
-        setErrorMessage("");
-        listConversations({ type: filterType || undefined, size: 50 })
-            .then((res) => {
-                if (!cancelled) setConversations(res.content ?? []);
-            })
-            .catch((err) => {
-                if (!cancelled) {
-                    setErrorMessage(err.response?.data?.message || "쪽지함을 불러오지 못했습니다.");
-                }
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
-        return () => {
-            cancelled = true;
+        loadConversations({ showLoading: true });
+        const disconnect = subscribeRealtime({
+            destination: "/user/queue/events",
+            onEvent: (event) => {
+                if (event?.type === "MESSAGE_CREATED") loadConversations();
+            },
+            onConnectionChange: (connected) => {
+                const reconnected = connected && !realtimeConnectedRef.current;
+                realtimeConnectedRef.current = connected;
+                if (reconnected) loadConversations();
+            },
+        });
+        const fallback = setInterval(() => {
+            if (!realtimeConnectedRef.current) loadConversations();
+        }, FALLBACK_SYNC_INTERVAL_MS);
+        const handleVisibility = () => {
+            if (!document.hidden) loadConversations();
         };
-    }, [filterType]);
+        document.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("online", loadConversations);
+        return () => {
+            disconnect();
+            clearInterval(fallback);
+            document.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("online", loadConversations);
+        };
+    }, [loadConversations]);
 
     const styles = {
         page: {

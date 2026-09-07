@@ -90,11 +90,10 @@ export default function CompanyCalendarPage() {
         if (Array.isArray(responseData?.reservations)) return responseData.reservations;
         if (Array.isArray(responseData?.times)) return responseData.times;
 
-        console.error("배열 응답이 아님:", responseData);
         return [];
     };
 
-    const normalizeDate = (value) => {
+    const normalizeDate = useCallback((value) => {
         if (!value) return "";
 
         if (Array.isArray(value)) {
@@ -103,23 +102,23 @@ export default function CompanyCalendarPage() {
         }
 
         return String(value).slice(0, 10);
-    };
+    }, []);
 
     const normalizeTime = (value) => {
         if (!value) return "";
         return String(value).slice(0, 5);
     };
 
-    const getReservationDate = (item) => {
+    const getReservationDate = useCallback((item) => {
         return normalizeDate(
             item.date ??
             item.visitDate ??
             item.visit_date ??
             item.reservationDate
         );
-    };
+    }, [normalizeDate]);
 
-    const buildCalendarEventsFromCountRows = (list) => {
+    const buildCalendarEventsFromCountRows = useCallback((list) => {
         return list.flatMap((d) => {
             const date = getReservationDate(d);
             const arr = [];
@@ -177,9 +176,9 @@ export default function CompanyCalendarPage() {
 
             return arr;
         });
-    };
+    }, [getReservationDate]);
 
-    const buildCalendarEventsFromReservationRows = (list) => {
+    const buildCalendarEventsFromReservationRows = useCallback((list) => {
         const grouped = {};
 
         list.forEach((r) => {
@@ -209,9 +208,9 @@ export default function CompanyCalendarPage() {
                 ...counts
             }))
         );
-    };
+    }, [buildCalendarEventsFromCountRows, getReservationDate]);
 
-    const buildCalendarEvents = (list) => {
+    const buildCalendarEvents = useCallback((list) => {
         if (!Array.isArray(list) || list.length === 0) {
             return [];
         }
@@ -228,7 +227,7 @@ export default function CompanyCalendarPage() {
         }
 
         return buildCalendarEventsFromCountRows(list);
-    };
+    }, [buildCalendarEventsFromCountRows, buildCalendarEventsFromReservationRows]);
 
     const fetchMonthData = useCallback(async () => {
         try {
@@ -241,13 +240,10 @@ export default function CompanyCalendarPage() {
 
             const list = extractList(res.data);
 
-            console.log("월별 예약 응답:", list);
-
             const mapped = buildCalendarEvents(list);
 
             setEvents(mapped);
         } catch (err) {
-            console.error("월별 예약 조회 실패:", err);
 
             if (err.response?.status === 401) {
                 alert("로그인이 만료되었습니다. 다시 로그인하세요.");
@@ -258,7 +254,7 @@ export default function CompanyCalendarPage() {
 
             setEvents([]);
         }
-    }, [currentMonth.year, currentMonth.month, navigate]);
+    }, [buildCalendarEvents, currentMonth.year, currentMonth.month, navigate]);
 
     const fetchReservationsByDate = useCallback(async (date) => {
         if (!date) return;
@@ -270,11 +266,8 @@ export default function CompanyCalendarPage() {
 
             const list = extractList(res.data);
 
-            console.log("날짜별 예약 응답:", date, list);
-
             setReservations(list);
         } catch (err) {
-            console.error("날짜별 예약 조회 실패:", err);
 
             if (err.response?.status === 401) {
                 alert("로그인이 만료되었습니다. 다시 로그인하세요.");
@@ -309,7 +302,6 @@ export default function CompanyCalendarPage() {
 
             return filtered;
         } catch (err) {
-            console.error("차단 시간 조회 실패:", err);
 
             if (err.response?.status === 401) {
                 alert("로그인이 만료되었습니다. 다시 로그인하세요.");
@@ -354,7 +346,6 @@ export default function CompanyCalendarPage() {
 
             return map;
         } catch (err) {
-            console.error("차단 날짜 조회 실패:", err);
             setBlockedMap({});
             return {};
         }

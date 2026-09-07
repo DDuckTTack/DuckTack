@@ -63,7 +63,6 @@ export default function ReservationDetail({
                 alert(`상태 변경 완료: ${status}`);
             })
             .catch((err) => {
-                console.error("상태 변경 실패:", err);
                 alert(err.response?.data?.message || "상태 변경 실패");
             })
             .finally(() => setLoading(false));
@@ -148,7 +147,6 @@ export default function ReservationDetail({
             closeCompleteModal();
             alert("수리 완료 정보가 저장되었습니다.");
         } catch (err) {
-            console.error("완료 처리 실패:", err);
             alert(err.response?.data?.message || "완료 처리 실패");
         } finally {
             setLoading(false);

@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -33,6 +35,43 @@ public class UserReservationController {
         return reservationRepository.findTopByUserUsernameOrderByIdDesc(username)
                 .map(r -> ApiResponse.ok(LatestReservationResponse.from(r)))
                 .orElseGet(() -> ApiResponse.ok(null));
+    }
+
+    @GetMapping("/my/companies")
+    @Transactional(readOnly = true)
+    public ApiResponse<List<ReservedCompanyResponse>> getMyReservedCompanies(Authentication auth) {
+        LinkedHashMap<Long, ReservedCompanyResponse> companies = new LinkedHashMap<>();
+
+        reservationRepository.findByUserUsernameOrderByIdDesc(auth.getName()).forEach(reservation -> {
+            if (reservation.getCompany() == null) return;
+
+            Long companyId = reservation.getCompany().getId();
+            companies.putIfAbsent(companyId, ReservedCompanyResponse.from(reservation));
+        });
+
+        return ApiResponse.ok(List.copyOf(companies.values()));
+    }
+
+    public record ReservedCompanyResponse(
+            Long companyId,
+            String companyName,
+            String address,
+            String phone,
+            Long latestReservationId,
+            Reservation.Status latestReservationStatus,
+            LocalDate latestVisitDate
+    ) {
+        public static ReservedCompanyResponse from(Reservation reservation) {
+            return new ReservedCompanyResponse(
+                    reservation.getCompany().getId(),
+                    reservation.getCompany().getName(),
+                    reservation.getCompany().getAddressLine(),
+                    reservation.getCompany().getPhone(),
+                    reservation.getId(),
+                    reservation.getStatus(),
+                    reservation.getVisitDate()
+            );
+        }
     }
 
     public record LatestReservationResponse(

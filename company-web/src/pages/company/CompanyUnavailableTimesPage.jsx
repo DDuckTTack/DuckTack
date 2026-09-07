@@ -23,12 +23,10 @@ function CompanyUnavailableTimesPage() {
         try {
 
             const res = await axios.get("/api/company/unavailable-times");
-            console.log(res.data);
             setList(res.data);
 
         } catch (e) {
 
-            console.error(e);
             alert("조회 실패");
 
         }
@@ -59,7 +57,6 @@ function CompanyUnavailableTimesPage() {
 
         } catch (e) {
 
-            console.error(e);
 
             alert(
                 e.response?.data?.message || "등록 실패"
@@ -80,7 +77,6 @@ function CompanyUnavailableTimesPage() {
 
         } catch (e) {
 
-            console.error(e);
             alert("삭제 실패");
 
         }

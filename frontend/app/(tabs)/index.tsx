@@ -25,7 +25,8 @@ const CELL_SIZE = 13;
 const GRID_COLS = Math.ceil(SCREEN_WIDTH / CELL_SIZE) + 2;
 const GRID_ROWS = Math.ceil(SCREEN_HEIGHT / CELL_SIZE) + 2;
 const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
-const REVEAL_THRESHOLD = 0.64;
+// 최초 로그인 안내는 화면의 80%를 닦으면 종료한다.
+const REVEAL_THRESHOLD = 0.8;
 
 type LatestReservation = {
   reservationId: number;

@@ -1,6 +1,35 @@
 import { useEffect, useState } from "react";
 import { listCommunityReports, reportReasonLabel } from "../../api/community";
 
+const KOREA_DATE_TIME = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+});
+
+function formatKoreaDateTime(value) {
+    if (value === null || value === undefined || value === "") return "-";
+
+    let date;
+    if (Array.isArray(value)) {
+        const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+        date = new Date(Date.UTC(year, Number(month) - 1, day, hour, minute, second));
+    } else if (typeof value === "number") {
+        date = new Date(value < 100000000000 ? value * 1000 : value);
+    } else {
+        const text = String(value).trim();
+        const hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
+        date = new Date(hasTimeZone ? text : `${text}Z`);
+    }
+
+    return Number.isNaN(date.getTime()) ? "-" : `${KOREA_DATE_TIME.format(date)} KST`;
+}
+
 export default function AdminCommunityReportsPage() {
     const [reports, setReports] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -13,8 +42,7 @@ export default function AdminCommunityReportsPage() {
         try {
             const response = await listCommunityReports({ size: 100 });
             setReports(response.content ?? []);
-        } catch (requestError) {
-            console.error("커뮤니티 신고 목록 조회 실패", requestError);
+        } catch {
             setReports([]);
             setError("신고 목록을 불러오지 못했습니다.");
         } finally {
@@ -71,7 +99,7 @@ export default function AdminCommunityReportsPage() {
                             <button type="button" key={report.reportId} style={styles.card(selected?.reportId === report.reportId)} onClick={() => setSelected(report)}>
                                 <div style={styles.reason}>{report.targetType === "POST" ? "게시글" : "댓글"} · {reportReasonLabel(report.reason)}</div>
                                 <div style={styles.meta}>신고자 {report.reporterName} · 작성자 {report.targetAuthorName}</div>
-                                <div style={styles.meta}>{new Date(report.createdAt).toLocaleString("ko-KR")}</div>
+                                <div style={styles.meta}>{formatKoreaDateTime(report.createdAt)}</div>
                             </button>
                         ))}
                     </div>
@@ -95,7 +123,7 @@ export default function AdminCommunityReportsPage() {
                             <div style={styles.section}>
                                 <div style={styles.infoGrid}>
                                     <span style={styles.label}>대상 ID</span><span style={styles.value}>{selected.targetId}</span>
-                                    <span style={styles.label}>접수 시각</span><span style={styles.value}>{new Date(selected.createdAt).toLocaleString("ko-KR")}</span>
+                                    <span style={styles.label}>접수 시각</span><span style={styles.value}>{formatKoreaDateTime(selected.createdAt)}</span>
                                 </div>
                             </div>
                         </aside>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "../../api/axios";
 
 const TIMES = [
@@ -41,7 +41,7 @@ function TimeBlockModal({
         return String(time).slice(0, 5);
     };
 
-    const normalizeDate = (value) => {
+    const normalizeDate = useCallback((value) => {
         if (!value) return "";
 
         if (Array.isArray(value)) {
@@ -50,13 +50,13 @@ function TimeBlockModal({
         }
 
         return String(value).slice(0, 10);
-    };
+    }, []);
 
-    const isSameDate = (a, b) => {
+    const isSameDate = useCallback((a, b) => {
         return normalizeDate(a) === normalizeDate(b);
-    };
+    }, [normalizeDate]);
 
-    const fetchBlockedTimes = async () => {
+    const fetchBlockedTimes = useCallback(async () => {
         try {
             const res = await axios.get("/api/company/unavailable-times");
             const list = extractList(res.data);
@@ -71,11 +71,10 @@ function TimeBlockModal({
 
             return filtered;
         } catch (err) {
-            console.error("차단 시간 조회 실패:", err);
             alert("차단 시간 조회 실패");
             return [];
         }
-    };
+    }, [date, isSameDate, setBlockedTimes]);
 
     useEffect(() => {
         if (Array.isArray(blockedTimes)) {
@@ -84,7 +83,7 @@ function TimeBlockModal({
         }
 
         fetchBlockedTimes();
-    }, [date]);
+    }, [blockedTimes, date, fetchBlockedTimes, isSameDate]);
 
     const findBlockedTime = (time, source = localBlockedTimes) => {
         return source.find(
@@ -152,10 +151,8 @@ function TimeBlockModal({
 
             await refreshAll();
         } catch (err) {
-            console.error("시간 차단/해제 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
                 alert(err.response.data?.message || "시간 차단/해제 실패");
             } else {
                 alert("서버 연결 실패");
@@ -190,10 +187,8 @@ function TimeBlockModal({
 
             await refreshAll();
         } catch (err) {
-            console.error("하루 전체 휴무 처리 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
                 alert(err.response.data?.message || "하루 전체 휴무 처리 실패");
             } else {
                 alert("서버 연결 실패");
@@ -233,10 +228,8 @@ function TimeBlockModal({
                 await refreshBlockedDates();
             }
         } catch (err) {
-            console.error("휴무 취소 실패:", err);
 
             if (err.response) {
-                console.log("서버 응답:", err.response.data);
                 alert(err.response.data?.message || "휴무 취소 실패");
             } else {
                 alert("서버 연결 실패");

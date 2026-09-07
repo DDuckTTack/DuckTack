@@ -57,6 +57,16 @@ export type MessageItem = {
   createdAt: string | null;
 };
 
+export type ReservedCompanyItem = {
+  companyId: number;
+  companyName: string;
+  address: string | null;
+  phone: string | null;
+  latestReservationId: number;
+  latestReservationStatus: string;
+  latestVisitDate: string | null;
+};
+
 function unwrapData<T>(raw: any): T {
   return raw?.data ?? raw;
 }
@@ -102,6 +112,12 @@ export async function getOrCreateConversation(target: {
     targetCompanyId: target.targetCompanyId ?? undefined,
   });
   return unwrapData<ConversationItem>(res.data);
+}
+
+export async function listReservedCompanies(): Promise<ReservedCompanyItem[]> {
+  const res = await apiClient.get("/api/reservations/my/companies");
+  const data = unwrapData<any>(res.data);
+  return Array.isArray(data) ? data : [];
 }
 
 export async function getConversation(conversationId: number | string): Promise<ConversationItem> {
