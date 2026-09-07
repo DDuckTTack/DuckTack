@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "../../api/axios";
+import { layout, badgeColors, actionBtn } from "./adminTheme";
 
 const STATUS = {
-    OPEN: { label: "진행 중", color: "#B45309", bg: "#FEF3C7" },
-    SELECTED: { label: "업체 선정", color: "#047857", bg: "#D1FAE5" },
-    EXPIRED: { label: "마감", color: "#475569", bg: "#E2E8F0" },
-    CANCELLED: { label: "취소", color: "#B91C1C", bg: "#FEE2E2" },
+    OPEN: { label: "진행 중", color: badgeColors.warning.text, bg: badgeColors.warning.bg },
+    SELECTED: { label: "업체 선정", color: badgeColors.success.text, bg: badgeColors.success.bg },
+    EXPIRED: { label: "마감", color: badgeColors.neutral.text, bg: badgeColors.neutral.bg },
+    CANCELLED: { label: "취소", color: badgeColors.danger.text, bg: badgeColors.danger.bg },
 };
 
 const unwrap = (value) => value?.data?.data ?? value?.data ?? value;
@@ -51,7 +52,7 @@ export default function AdminBidsPage() {
 
     return <div style={s.page}>
         <div style={s.headingRow}>
-            <div><h1 style={s.title}>입찰 관리</h1><p style={s.desc}>사용자 요청부터 참여 업체와 최종 선정 결과까지 확인합니다.</p></div>
+            <div><h2 style={s.title}>💰 입찰 관리</h2><p style={s.desc}>사용자 요청부터 참여 업체와 최종 선정 결과까지 확인합니다.</p></div>
             <button style={s.refresh} onClick={load}>새로고침</button>
         </div>
 
@@ -68,7 +69,7 @@ export default function AdminBidsPage() {
         </div>
 
         {loading ? <div style={s.state}>입찰 정보를 불러오는 중입니다.</div>
-            : error ? <div style={{...s.state, color:'#B91C1C'}}>{error}<button style={s.retry} onClick={load}>다시 시도</button></div>
+            : error ? <div style={{...s.state, color:'#B91C1C'}}>{error}<button style={{...actionBtn("outline"), marginLeft: 12}} onClick={load}>다시 시도</button></div>
             : filtered.length === 0 ? <div style={s.state}>조건에 맞는 입찰 요청이 없습니다.</div>
             : <div style={s.list}>{filtered.map((item) => {
                 const meta = STATUS[item.status] || STATUS.EXPIRED;
@@ -105,6 +106,21 @@ export default function AdminBidsPage() {
 function Info({label, value}) { return <div style={s.info}><span>{label}</span><strong>{value || '-'}</strong></div>; }
 
 const s = {
-    page:{padding:28,minHeight:'100vh',background:'#F8FAFC',boxSizing:'border-box'},headingRow:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22},title:{margin:0,fontSize:28,color:'#0F172A'},desc:{margin:'7px 0 0',color:'#64748B'},refresh:{border:0,borderRadius:11,padding:'11px 17px',background:'#4F46E5',color:'#fff',fontWeight:800,cursor:'pointer'},
-    stats:{display:'grid',gridTemplateColumns:'repeat(4,minmax(150px,1fr))',gap:14,marginBottom:18},statCard:{background:'#fff',border:'1px solid #E2E8F0',borderRadius:16,padding:'17px 19px',display:'flex',justifyContent:'space-between',alignItems:'center'},statLabel:{color:'#64748B',fontWeight:700},statValue:{fontSize:26},filters:{background:'#fff',border:'1px solid #E2E8F0',borderRadius:16,padding:15,display:'flex',gap:10,marginBottom:16},search:{flex:1,padding:'12px 14px',border:'1px solid #CBD5E1',borderRadius:10,fontSize:14},select:{padding:'0 14px',border:'1px solid #CBD5E1',borderRadius:10,background:'#fff'},state:{padding:60,textAlign:'center',background:'#fff',borderRadius:16,color:'#64748B',fontWeight:700},retry:{marginLeft:12,padding:'8px 12px'},list:{display:'flex',flexDirection:'column',gap:12},card:{background:'#fff',border:'1px solid #E2E8F0',borderRadius:18,overflow:'hidden'},cardHead:{width:'100%',border:0,background:'#fff',padding:18,display:'flex',alignItems:'center',gap:15,textAlign:'left',cursor:'pointer'},idBox:{padding:'8px 10px',borderRadius:10,background:'#EEF2FF',color:'#4F46E5',fontWeight:900},mainInfo:{flex:1},nameRow:{display:'flex',alignItems:'center',gap:9},issue:{fontSize:17,color:'#0F172A'},badge:{padding:'4px 9px',borderRadius:99,fontSize:12,fontWeight:800},meta:{fontSize:13,color:'#64748B',marginTop:6},selectedSummary:{minWidth:150,display:'flex',flexDirection:'column',gap:3,color:'#64748B',fontSize:12},chevron:{color:'#94A3B8'},detail:{borderTop:'1px solid #E2E8F0',padding:20,background:'#FAFBFF'},requestGrid:{display:'flex',gap:20},image:{width:180,height:130,objectFit:'cover',borderRadius:14,background:'#E2E8F0'},requestInfo:{flex:1,display:'grid',gridTemplateColumns:'repeat(2,minmax(220px,1fr))',gap:12},info:{display:'flex',flexDirection:'column',gap:4},offerTitle:{fontSize:16,color:'#1E293B',margin:'24px 0 12px'},offerGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))',gap:12},offerCard:{padding:16,border:'1px solid #E2E8F0',borderRadius:14,background:'#fff'},winner:{border:'2px solid #10B981',background:'#F0FDF4'},offerTop:{display:'flex',justifyContent:'space-between',gap:8},winnerBadge:{fontSize:11,padding:'3px 7px',borderRadius:99,background:'#10B981',color:'#fff'},price:{fontSize:21,fontWeight:900,color:'#4F46E5',margin:'12px 0 7px'},offerMeta:{fontSize:12,color:'#64748B',marginTop:5},message:{padding:9,marginTop:10,borderRadius:8,background:'#F1F5F9',fontSize:13},bidTime:{fontSize:11,color:'#94A3B8',marginTop:10},noOffer:{padding:25,textAlign:'center',background:'#fff',borderRadius:12,color:'#94A3B8'}
+    page: layout.container,
+    headingRow: layout.headerRow,
+    title: layout.title,
+    desc: layout.subTitle,
+    refresh: actionBtn("primary"),
+    stats:{display:'grid',gridTemplateColumns:'repeat(4,minmax(150px,1fr))',gap:14,marginBottom:18},
+    statCard:{...layout.card, display:'flex',justifyContent:'space-between',alignItems:'center'},
+    statLabel:{color:'#64748b',fontWeight:700},statValue:{fontSize:26},
+    filters:{...layout.filterCard},
+    search:{...layout.inputBox, flex:1, minWidth: '220px'},
+    select:{...layout.selectBox},
+    state:{...layout.tableCard, ...layout.emptyBox, fontWeight:700},
+    list:{display:'flex',flexDirection:'column',gap:12},
+    card:{...layout.card, padding:0, overflow:'hidden'},
+    cardHead:{width:'100%',border:0,background:'#fff',padding:18,display:'flex',alignItems:'center',gap:15,textAlign:'left',cursor:'pointer',borderRadius:'16px'},
+    idBox:{padding:'8px 10px',borderRadius:10,background:badgeColors.info.bg,color:'#0066ff',fontWeight:800},
+    mainInfo:{flex:1},nameRow:{display:'flex',alignItems:'center',gap:9},issue:{fontSize:17,color:'#1e293b'},badge:{padding:'4px 12px',borderRadius:8,fontSize:12,fontWeight:700},meta:{fontSize:13,color:'#64748b',marginTop:6},selectedSummary:{minWidth:150,display:'flex',flexDirection:'column',gap:3,color:'#64748b',fontSize:12},chevron:{color:'#94a3b8'},detail:{borderTop:'1px solid #f1f5f9',padding:20,background:'#FAFBFF'},requestGrid:{display:'flex',gap:20},image:{width:180,height:130,objectFit:'cover',borderRadius:14,background:'#e2e8f0'},requestInfo:{flex:1,display:'grid',gridTemplateColumns:'repeat(2,minmax(220px,1fr))',gap:12},info:{display:'flex',flexDirection:'column',gap:4},offerTitle:{fontSize:16,color:'#1e293b',margin:'24px 0 12px',fontWeight:800},offerGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))',gap:12},offerCard:{padding:16,border:'1px solid #e2e8f0',borderRadius:14,background:'#fff'},winner:{border:'2px solid #10B981',background:'#F0FDF4'},offerTop:{display:'flex',justifyContent:'space-between',gap:8},winnerBadge:{fontSize:11,padding:'3px 7px',borderRadius:99,background:'#10B981',color:'#fff',fontWeight:700},price:{fontSize:21,fontWeight:800,color:'#0066ff',margin:'12px 0 7px'},offerMeta:{fontSize:12,color:'#64748b',marginTop:5},message:{padding:9,marginTop:10,borderRadius:8,background:'#F1F5F9',fontSize:13},bidTime:{fontSize:11,color:'#94a3b8',marginTop:10},noOffer:{padding:25,textAlign:'center',background:'#fff',borderRadius:12,color:'#94a3b8'}
 };

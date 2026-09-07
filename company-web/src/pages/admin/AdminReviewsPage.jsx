@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "../../api/axios";
+import { layout, actionBtn } from "./adminTheme";
 
 function normalizeText(value) {
     return String(value ?? "").trim().toLowerCase();
@@ -99,32 +100,25 @@ export default function AdminReviewsPage() {
     };
 
     const styles = {
-        page: { padding: "28px", backgroundColor: "#F8FAFC", minHeight: "100vh" },
-        title: { fontSize: "26px", fontWeight: "900", color: "#0F172A", marginBottom: "8px" },
-        desc: { color: "#64748B", marginBottom: "24px" },
-        filterBox: { backgroundColor: "white", padding: "20px", borderRadius: "16px", border: "1px solid #E2E8F0", display: "flex", gap: "10px", marginBottom: "20px", alignItems: "center" },
-        input: { padding: "12px", borderRadius: "10px", border: "1px solid #CBD5E1", fontSize: "14px", width: "320px" },
-        button: { padding: "12px 18px", borderRadius: "10px", border: "none", backgroundColor: "#0066FF", color: "white", fontWeight: "800", cursor: "pointer" },
+        ...layout,
         statGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "14px", marginBottom: "24px" },
-        statCard: { backgroundColor: "white", borderRadius: "16px", border: "1px solid #E2E8F0", padding: "18px" },
-        statName: { fontWeight: "900", color: "#1E293B", marginBottom: "8px" },
-        statText: { color: "#64748B", fontSize: "14px", lineHeight: 1.6 },
-        table: { width: "100%", borderCollapse: "collapse", backgroundColor: "white", borderRadius: "16px", overflow: "hidden", boxShadow: "0 4px 12px rgba(15,23,42,0.05)" },
-        th: { textAlign: "left", padding: "14px", backgroundColor: "#F1F5F9", color: "#334155", fontSize: "13px", fontWeight: "900", borderBottom: "1px solid #E2E8F0" },
-        td: { padding: "14px", borderBottom: "1px solid #E2E8F0", color: "#334155", fontSize: "14px", verticalAlign: "top" },
-        deleteBtn: { padding: "8px 10px", borderRadius: "8px", border: "1px solid #FCA5A5", backgroundColor: "#FEE2E2", color: "#B91C1C", fontWeight: "800", cursor: "pointer" },
-        empty: { padding: "50px", textAlign: "center", color: "#94A3B8", backgroundColor: "white", borderRadius: "16px", fontWeight: "800" },
-        countText: { color: "#64748B", fontWeight: "800", fontSize: "13px" },
+        statCard: { ...layout.card, padding: "18px" },
+        statName: { fontWeight: "800", color: "#1e293b", marginBottom: "8px" },
+        statText: { color: "#64748b", fontSize: "14px", lineHeight: 1.6 },
+        deleteBtn: actionBtn("danger"),
+        countText: { color: "#64748b", fontWeight: "700", fontSize: "13px" },
     };
 
     return (
-        <div style={styles.page}>
-            <h1 style={styles.title}>⭐ 리뷰 관리</h1>
-            <div style={styles.desc}>전체 업체 리뷰를 조회하고, 부적절한 리뷰를 삭제할 수 있습니다.</div>
+        <div style={styles.container}>
+            <div style={styles.headerSection}>
+                <h2 style={styles.title}>⭐ 리뷰 관리</h2>
+                <p style={styles.subTitle}>전체 업체 리뷰를 조회하고, 부적절한 리뷰를 삭제할 수 있습니다.</p>
+            </div>
 
-            <div style={styles.filterBox}>
+            <div style={styles.filterCard}>
                 <input
-                    style={styles.input}
+                    style={{ ...styles.inputBox, flex: 1, minWidth: "220px" }}
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="업체명으로 검색"
@@ -133,14 +127,8 @@ export default function AdminReviewsPage() {
                     }}
                 />
 
-                <button style={styles.button} onClick={loadReviews}>새로고침</button>
-
-                <button
-                    style={{ ...styles.button, backgroundColor: "#64748B" }}
-                    onClick={() => setCompanyName("")}
-                >
-                    검색 초기화
-                </button>
+                <button style={actionBtn("primary")} onClick={loadReviews}>새로고침</button>
+                <button style={styles.resetBtn} onClick={() => setCompanyName("")}>검색 초기화</button>
 
                 <span style={styles.countText}>표시 {filteredReviews.length}개 / 전체 {reviews.length}개</span>
             </div>
@@ -158,45 +146,47 @@ export default function AdminReviewsPage() {
                 ))}
             </div>
 
-            {loading ? (
-                <div style={styles.empty}>리뷰를 불러오는 중...</div>
-            ) : filteredReviews.length === 0 ? (
-                <div style={styles.empty}>조건에 맞는 리뷰가 없습니다.</div>
-            ) : (
+            <div style={styles.tableCard}>
                 <table style={styles.table}>
-                    <thead>
+                    <thead style={styles.thead}>
                     <tr>
                         <th style={styles.th}>업체</th>
                         <th style={styles.th}>작성자</th>
                         <th style={styles.th}>별점</th>
                         <th style={styles.th}>내용</th>
                         <th style={styles.th}>작성일</th>
-                        <th style={styles.th}>관리</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>관리</th>
                     </tr>
                     </thead>
 
                     <tbody>
-                    {filteredReviews.map((r) => (
-                        <tr key={r.id}>
-                            <td style={styles.td}>
-                                <b>{r.companyName || r.kakaoPlaceName || `업체 #${r.companyId}`}</b><br />
-                                ID: {r.companyId ?? "-"}
-                            </td>
-                            <td style={styles.td}>{r.authorUsername || "-"}</td>
-                            <td style={styles.td}>
-                                <span style={{ color: "#F59E0B", fontWeight: "900" }}>{renderStars(r.rating)}</span><br />
-                                {r.rating}/5
-                            </td>
-                            <td style={styles.td}>{r.content || "내용 없음"}</td>
-                            <td style={styles.td}>{formatDate(r.createdAt)}</td>
-                            <td style={styles.td}>
-                                <button style={styles.deleteBtn} onClick={() => deleteReview(r.id)}>삭제</button>
-                            </td>
-                        </tr>
-                    ))}
+                    {loading ? (
+                        <tr><td colSpan="6" style={styles.emptyBox}>리뷰를 불러오는 중...</td></tr>
+                    ) : filteredReviews.length === 0 ? (
+                        <tr><td colSpan="6" style={styles.emptyBox}>조건에 맞는 리뷰가 없습니다.</td></tr>
+                    ) : (
+                        filteredReviews.map((r) => (
+                            <tr key={r.id} style={styles.tr}>
+                                <td style={styles.td}>
+                                    <div style={{ fontWeight: "800", color: "#1e293b" }}>{r.companyName || r.kakaoPlaceName || `업체 #${r.companyId}`}</div>
+                                    <div style={styles.smallText}>ID: {r.companyId ?? "-"}</div>
+                                </td>
+                                <td style={styles.td}>{r.authorUsername || "-"}</td>
+                                <td style={styles.td}>
+                                    <span style={{ color: "#F59E0B", fontWeight: "800" }}>{renderStars(r.rating)}</span>
+                                    <div style={styles.smallText}>{r.rating}/5</div>
+                                </td>
+                                <td style={{ ...styles.td, maxWidth: "320px", lineHeight: "1.4" }}>{r.content || "내용 없음"}</td>
+                                <td style={styles.td}>{formatDate(r.createdAt)}</td>
+                                <td style={{ ...styles.td, textAlign: "right" }}>
+                                    <button style={{ ...styles.deleteBtn, marginRight: 0 }} onClick={() => deleteReview(r.id)}>삭제</button>
+                                </td>
+                            </tr>
+                        ))
+                    )}
                     </tbody>
                 </table>
-            )}
+            </div>
         </div>
     );
 }

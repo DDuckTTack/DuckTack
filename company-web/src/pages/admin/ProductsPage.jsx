@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "../../api/axios";
+import { layout, actionBtn } from "./adminTheme";
 
 const ISSUE_OPTIONS = [
     { value: "CRACK", label: "균열" },
@@ -29,57 +30,22 @@ function ProductsPage() {
 
     const styles = useMemo(
         () => ({
-            container: {
-                padding: "40px",
-                backgroundColor: "#F8FAFC",
-                minHeight: "100vh",
-                fontFamily: "'Pretendard', sans-serif",
-            },
-
-            header: {
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: "24px",
-                gap: "20px",
-            },
-
-            title: {
-                fontSize: "28px",
-                fontWeight: "900",
-                color: "#1E293B",
-                margin: 0,
-            },
-
-            subtitle: {
-                color: "#94A3B8",
-                fontSize: "14px",
-                marginTop: "8px",
-            },
-
-            reloadBtn: {
-                border: "none",
-                backgroundColor: "#2563EB",
-                color: "white",
-                padding: "12px 18px",
-                borderRadius: "12px",
-                fontWeight: "800",
-                cursor: "pointer",
-            },
+            container: layout.container,
+            header: layout.headerRow,
+            title: layout.title,
+            subtitle: layout.subTitle,
+            reloadBtn: actionBtn("primary"),
 
             formCard: {
-                backgroundColor: "white",
-                borderRadius: "22px",
-                padding: "24px",
-                border: "1px solid #E2E8F0",
-                marginBottom: "24px",
-                boxShadow: "0 10px 25px rgba(15,23,42,0.04)",
+                ...layout.filterCard,
+                display: "block",
+                borderRadius: "16px",
             },
 
             formTitle: {
-                fontSize: "18px",
-                fontWeight: "900",
-                color: "#1E293B",
+                fontSize: "16px",
+                fontWeight: "800",
+                color: "#1e293b",
                 marginBottom: "16px",
             },
 
@@ -92,7 +58,7 @@ function ProductsPage() {
 
             input: {
                 height: "42px",
-                border: "1px solid #CBD5E1",
+                border: "1px solid #e2e8f0",
                 borderRadius: "10px",
                 padding: "0 12px",
                 fontSize: "14px",
@@ -102,14 +68,15 @@ function ProductsPage() {
 
             select: {
                 height: "42px",
-                border: "1px solid #CBD5E1",
+                border: "1px solid #e2e8f0",
                 borderRadius: "10px",
                 padding: "0 12px",
-                backgroundColor: "white",
-                fontWeight: "700",
-                color: "#334155",
+                backgroundColor: "#F8FAFC",
+                fontWeight: "600",
+                color: "#1e293b",
                 outline: "none",
                 boxSizing: "border-box",
+                cursor: "pointer",
             },
 
             formBottom: {
@@ -121,7 +88,7 @@ function ProductsPage() {
 
             longInput: {
                 height: "42px",
-                border: "1px solid #CBD5E1",
+                border: "1px solid #e2e8f0",
                 borderRadius: "10px",
                 padding: "0 12px",
                 fontSize: "14px",
@@ -130,15 +97,7 @@ function ProductsPage() {
                 boxSizing: "border-box",
             },
 
-            addBtn: {
-                height: "42px",
-                border: "none",
-                borderRadius: "10px",
-                backgroundColor: "#1E293B",
-                color: "white",
-                fontWeight: "900",
-                cursor: "pointer",
-            },
+            addBtn: { ...actionBtn("primary"), height: "42px", marginRight: 0 },
 
             filterRow: {
                 display: "flex",
@@ -148,7 +107,7 @@ function ProductsPage() {
             },
 
             countText: {
-                color: "#64748B",
+                color: "#64748b",
                 fontSize: "14px",
                 fontWeight: "700",
             },
@@ -229,47 +188,11 @@ function ProductsPage() {
                 gap: "8px",
             },
 
-            hideBtn: {
-                flex: 1,
-                padding: "12px",
-                border: "none",
-                borderRadius: "12px",
-                backgroundColor: "#FEF3C7",
-                color: "#B45309",
-                fontWeight: "900",
-                cursor: "pointer",
-            },
+            hideBtn: { ...actionBtn("warning"), flex: 1, textAlign: "center", marginRight: 0 },
+            showBtn: { ...actionBtn("success"), flex: 1, textAlign: "center", marginRight: 0 },
+            deleteBtn: { ...actionBtn("danger"), flex: 1, textAlign: "center", marginRight: 0 },
 
-            showBtn: {
-                flex: 1,
-                padding: "12px",
-                border: "none",
-                borderRadius: "12px",
-                backgroundColor: "#DCFCE7",
-                color: "#15803D",
-                fontWeight: "900",
-                cursor: "pointer",
-            },
-
-            deleteBtn: {
-                flex: 1,
-                padding: "12px",
-                border: "none",
-                borderRadius: "12px",
-                backgroundColor: "#FEE2E2",
-                color: "#DC2626",
-                fontWeight: "900",
-                cursor: "pointer",
-            },
-
-            empty: {
-                backgroundColor: "white",
-                borderRadius: "20px",
-                padding: "60px",
-                textAlign: "center",
-                color: "#94A3B8",
-                fontWeight: "800",
-            },
+            empty: { ...layout.tableCard, ...layout.emptyBox, fontWeight: "700" },
         }),
         []
     );
@@ -420,7 +343,7 @@ function ProductsPage() {
         <div style={styles.container}>
             <div style={styles.header}>
                 <div>
-                    <h1 style={styles.title}>🧹 청소/보수 물품 관리</h1>
+                    <h2 style={styles.title}>📦 물품 관리</h2>
                     <div style={styles.subtitle}>
                         쿠팡 파트너스 링크 상품을 관리합니다. 앱 숨김 처리한 상품은 앱 추천 목록에 노출되지 않습니다.
                     </div>

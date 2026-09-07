@@ -1,113 +1,25 @@
 import { useEffect, useState } from "react";
 import axios from "../../api/axios";
 import { useNavigate } from "react-router-dom";
+import { layout, badge, badgeColors, actionBtn } from "./adminTheme";
 
 const styles = {
-    container: {
-        padding: "40px",
-        backgroundColor: "#F8FAFC",
-        minHeight: "100%",
-        fontFamily: "'Pretendard', sans-serif",
-    },
-    headerSection: {
-        marginBottom: "32px",
-    },
-    title: {
-        fontSize: "28px",
-        fontWeight: "800",
-        color: "#1e293b",
-        margin: 0,
-        letterSpacing: "-0.5px",
-    },
-    subTitle: {
-        color: "#94a3b8",
-        fontSize: "14px",
-        marginTop: "8px",
-        fontWeight: "500",
-    },
-    tableCard: {
-        backgroundColor: "white",
-        borderRadius: "24px",
-        boxShadow: "0 20px 25px -5px rgba(0,0,0,0.05)",
-        border: "1px solid rgba(255,255,255,0.8)",
-        overflow: "hidden",
-    },
-    table: {
-        width: "100%",
-        borderCollapse: "collapse",
-        textAlign: "left",
-    },
-    thead: {
-        backgroundColor: "#F8FAFC",
-        borderBottom: "1px solid #f1f5f9",
-    },
-    th: {
-        padding: "16px 24px",
-        fontSize: "13px",
-        fontWeight: "700",
-        color: "#64748b",
-        textTransform: "uppercase",
-        letterSpacing: "0.5px",
-        whiteSpace: "nowrap",
-    },
+    ...layout,
     tr: {
-        borderBottom: "1px solid #f1f5f9",
-        transition: "background-color 0.2s",
+        ...layout.tr,
         cursor: "pointer",
-    },
-    td: {
-        padding: "20px 24px",
-        fontSize: "15px",
-        color: "#334155",
-        verticalAlign: "middle",
     },
     username: {
         fontWeight: "800",
         color: "#1e293b",
     },
-    smallText: {
-        fontSize: "12px",
-        color: "#94a3b8",
-        marginTop: "3px",
+    roleBadge: badge(badgeColors.info.bg, badgeColors.info.text),
+    statusBadge: (status) => {
+        const ok = status === "ACTIVE" || status === "정상";
+        const c = ok ? badgeColors.success : badgeColors.danger;
+        return badge(c.bg, c.text);
     },
-    roleBadge: {
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "4px 10px",
-        borderRadius: "8px",
-        fontSize: "12px",
-        fontWeight: "800",
-        backgroundColor: "#EFF6FF",
-        color: "#2563EB",
-    },
-    statusBadge: (status) => ({
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "4px 12px",
-        borderRadius: "8px",
-        fontSize: "12px",
-        fontWeight: "700",
-        backgroundColor:
-            status === "ACTIVE" || status === "정상" ? "#DCFCE7" : "#FEE2E2",
-        color:
-            status === "ACTIVE" || status === "정상" ? "#15803D" : "#B91C1C",
-    }),
-    detailBtn: {
-        padding: "8px 14px",
-        borderRadius: "10px",
-        border: "1px solid #e2e8f0",
-        backgroundColor: "white",
-        color: "#64748b",
-        fontSize: "13px",
-        fontWeight: "700",
-        cursor: "pointer",
-        transition: "all 0.2s",
-    },
-    emptyBox: {
-        padding: "60px",
-        textAlign: "center",
-        color: "#cbd5e1",
-    },
+    detailBtn: actionBtn("outline"),
 };
 
 function AdminUsersPage() {
@@ -204,7 +116,7 @@ function AdminUsersPage() {
     return (
         <div style={styles.container}>
             <div style={styles.headerSection}>
-                <h2 style={styles.title}>사용자 관리</h2>
+                <h2 style={styles.title}>👤 사용자 관리</h2>
                 <p style={styles.subTitle}>
                     일반 사용자 계정을 확인하고 상세 활동 정보를 조회할 수 있습니다.
                 </p>

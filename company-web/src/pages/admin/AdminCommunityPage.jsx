@@ -8,6 +8,7 @@ import {
     listComments,
     listPosts,
 } from "../../api/community";
+import { layout, actionBtn } from "./adminTheme";
 
 export default function AdminCommunityPage() {
     const [boardType, setBoardType] = useState("");
@@ -63,9 +64,9 @@ export default function AdminCommunityPage() {
     };
 
     const styles = {
-        page: { fontFamily: "'Pretendard', sans-serif", color: "#0F172A" },
-        title: { fontSize: "28px", fontWeight: "900", marginBottom: "6px" },
-        subtitle: { color: "#64748B", fontSize: "14px", fontWeight: "600", marginBottom: "20px" },
+        page: layout.container,
+        title: layout.title,
+        subtitle: { ...layout.subTitle, marginBottom: "24px" },
         toolbar: { display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" },
         tab: (active) => ({
             padding: "9px 14px",
@@ -87,10 +88,8 @@ export default function AdminCommunityPage() {
         },
         layout: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", alignItems: "start" },
         listCard: {
-            backgroundColor: "#FFFFFF",
-            borderRadius: "20px",
-            border: "1px solid #E2E8F0",
-            boxShadow: "0 10px 26px rgba(15, 23, 42, 0.05)",
+            ...layout.tableCard,
+            borderRadius: "24px",
             padding: "8px",
         },
         row: (active) => ({
@@ -115,16 +114,14 @@ export default function AdminCommunityPage() {
             cursor: "pointer",
         }),
         detailCard: {
-            backgroundColor: "#FFFFFF",
-            borderRadius: "20px",
-            border: "1px solid #E2E8F0",
-            boxShadow: "0 10px 26px rgba(15, 23, 42, 0.05)",
+            ...layout.tableCard,
+            borderRadius: "24px",
             padding: "24px",
             position: "sticky",
             top: "20px",
         },
-        emptyDetail: { padding: "60px 20px", textAlign: "center", color: "#94A3B8", fontWeight: "800" },
-        detailTitle: { fontSize: "18px", fontWeight: "900", marginBottom: "8px" },
+        emptyDetail: { padding: "80px 20px", textAlign: "center", color: "#94a3b8", fontWeight: "700" },
+        detailTitle: { fontSize: "18px", fontWeight: "800", marginBottom: "8px" },
         reportBadge: {
             display: "inline-block",
             fontSize: "12px",
@@ -145,16 +142,7 @@ export default function AdminCommunityPage() {
             paddingBottom: "16px",
             borderBottom: "1px solid #F1F5F9",
         },
-        dangerBtn: {
-            padding: "10px 16px",
-            borderRadius: "10px",
-            border: "1px solid #FCA5A5",
-            backgroundColor: "#FFFFFF",
-            color: "#DC2626",
-            fontWeight: "800",
-            cursor: "pointer",
-            marginBottom: "16px",
-        },
+        dangerBtn: { ...actionBtn("danger"), marginBottom: "16px", marginRight: 0 },
         commentTitle: { fontWeight: "900", fontSize: "14px", marginBottom: "8px" },
         comment: {
             padding: "10px 0",
@@ -167,24 +155,15 @@ export default function AdminCommunityPage() {
         commentAuthor: { fontWeight: "800", fontSize: "12px", marginBottom: "2px" },
         commentContent: { fontSize: "13px", color: "#334155" },
         commentReport: { fontSize: "11px", color: "#DC2626", fontWeight: "800" },
-        smallDanger: {
-            fontSize: "11px",
-            color: "#DC2626",
-            background: "none",
-            border: "1px solid #FCA5A5",
-            borderRadius: "6px",
-            padding: "4px 8px",
-            cursor: "pointer",
-            flexShrink: 0,
-        },
+        smallDanger: { ...actionBtn("danger"), fontSize: "11px", padding: "4px 8px", marginRight: 0, flexShrink: 0 },
     };
 
     return (
         <div style={styles.page}>
-            <h1 style={styles.title}>💬 커뮤니티 관리</h1>
-            <div style={styles.subtitle}>
+            <h2 style={styles.title}>💬 커뮤니티 관리</h2>
+            <p style={styles.subtitle}>
                 게시글을 선택해 상세 내용과 댓글을 확인하고 관리할 수 있습니다.
-            </div>
+            </p>
 
             <div style={styles.toolbar}>
                 <button style={styles.tab(boardType === "")} onClick={() => { setBoardType(""); setPage(0); }}>
