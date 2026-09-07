@@ -229,7 +229,7 @@ export async function listExpertVendors(params: {
         return sortPartnerFirstByName(nearbyVendors);
       }
     } catch (err) {
-      console.log("[listExpertVendors] 지역 중심 업체 조회 실패. 제휴업체 API로 fallback:", err);
+      if (__DEV__) console.log("[listExpertVendors] 지역 중심 업체 조회 실패. 제휴업체 API로 fallback:", err);
     }
   }
 

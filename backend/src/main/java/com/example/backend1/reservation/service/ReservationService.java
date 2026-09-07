@@ -13,6 +13,7 @@ import com.example.backend1.reservation.dto.ReservationCalendarResponse;
 import com.example.backend1.reservation.dto.ReservationDetailResponse;
 import com.example.backend1.reservation.dto.ReservationRequest;
 import com.example.backend1.reservation.repo.ReservationRepository;
+import com.example.backend1.realtime.RealtimeEventPublisher;
 import com.example.backend1.user.domain.User;
 import com.example.backend1.user.repo.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -43,6 +44,7 @@ public class ReservationService {
     private final UserRepository userRepository;
     private final HistoryRepository historyRepository;
     private final CouponService couponService;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public ReservationService(
             ReservationRepository reservationRepo,
@@ -51,7 +53,8 @@ public class ReservationService {
             CompanyUnavailableTimeRepository timeRepo,
             UserRepository userRepository,
             HistoryRepository historyRepository,
-            CouponService couponService
+            CouponService couponService,
+            RealtimeEventPublisher realtimeEventPublisher
     ) {
         this.reservationRepo = reservationRepo;
         this.companyRepo = companyRepo;
@@ -60,6 +63,7 @@ public class ReservationService {
         this.userRepository = userRepository;
         this.historyRepository = historyRepository;
         this.couponService = couponService;
+        this.realtimeEventPublisher = realtimeEventPublisher;
     }
 
     public void create(ReservationRequest req, Authentication auth) {
@@ -306,6 +310,7 @@ public class ReservationService {
         }
 
         reservationRepo.save(reservation);
+        realtimeEventPublisher.publishToUser(reservation.getUser().getUsername(), "RESERVATION_UPDATED", reservation.getId());
     }
 
     public void completeReservation(Long id, Long companyId, CompleteReservationRequest req) {
@@ -352,6 +357,7 @@ public class ReservationService {
         );
 
         reservationRepo.save(reservation);
+        realtimeEventPublisher.publishToUser(reservation.getUser().getUsername(), "RESERVATION_UPDATED", reservation.getId());
 
         couponService.issueRepeatVisitCouponIfEligible(
                 reservation.getUser(),
@@ -380,6 +386,7 @@ public class ReservationService {
         reservation.setRejectReason(rejectReason);
 
         reservationRepo.save(reservation);
+        realtimeEventPublisher.publishToUser(reservation.getUser().getUsername(), "RESERVATION_UPDATED", reservation.getId());
     }
 
     public void cancelReservation(Long id, Authentication auth) {
