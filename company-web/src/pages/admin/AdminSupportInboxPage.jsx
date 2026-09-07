@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listThreads } from "../../api/support";
+import { layout, badgeColors } from "./adminTheme";
 
 function formatTime(value) {
     if (!value) return "";
@@ -45,23 +46,10 @@ export default function AdminSupportInboxPage() {
     }, [statusFilter]);
 
     const styles = {
-        page: {
-            minHeight: "100vh",
-            backgroundColor: "#F8FAFC",
-            padding: "32px 48px",
-            fontFamily: "'Pretendard', sans-serif",
-            color: "#0F172A",
-        },
-        header: {
-            backgroundColor: "#FFFFFF",
-            borderRadius: "24px",
-            padding: "34px 38px",
-            boxShadow: "0 14px 34px rgba(15, 23, 42, 0.06)",
-            border: "1px solid #E2E8F0",
-            marginBottom: "24px",
-        },
+        page: layout.container,
+        header: { marginBottom: "24px" },
         titleRow: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" },
-        title: { margin: 0, fontSize: "34px", fontWeight: "900" },
+        title: layout.title,
         tabs: { display: "flex", gap: "8px" },
         tab: (active) => ({
             padding: "10px 18px",
@@ -73,11 +61,8 @@ export default function AdminSupportInboxPage() {
             cursor: "pointer",
         }),
         listSection: {
-            backgroundColor: "#FFFFFF",
-            borderRadius: "24px",
+            ...layout.tableCard,
             padding: "12px",
-            border: "1px solid #E2E8F0",
-            boxShadow: "0 14px 34px rgba(15, 23, 42, 0.06)",
         },
         row: {
             display: "flex",
@@ -102,15 +87,18 @@ export default function AdminSupportInboxPage() {
         rowMain: { flex: 1, minWidth: 0 },
         rowTop: { display: "flex", justifyContent: "space-between", marginBottom: "4px" },
         name: { fontWeight: "800", fontSize: "15px" },
-        statusBadge: (status) => ({
-            fontSize: "11px",
-            fontWeight: "800",
-            color: status === "PENDING" ? "#B91C1C" : "#15803D",
-            backgroundColor: status === "PENDING" ? "#FEE2E2" : "#DCFCE7",
-            borderRadius: "6px",
-            padding: "3px 8px",
-            marginLeft: "8px",
-        }),
+        statusBadge: (status) => {
+            const c = status === "PENDING" ? badgeColors.danger : badgeColors.success;
+            return {
+                fontSize: "11px",
+                fontWeight: "700",
+                color: c.text,
+                backgroundColor: c.bg,
+                borderRadius: "8px",
+                padding: "3px 8px",
+                marginLeft: "8px",
+            };
+        },
         time: { fontSize: "12px", color: "#94A3B8", fontWeight: "700" },
         preview: {
             fontSize: "13px",
@@ -120,7 +108,7 @@ export default function AdminSupportInboxPage() {
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
         },
-        empty: { padding: "60px", textAlign: "center", color: "#94A3B8", fontWeight: "900" },
+        empty: layout.emptyBox,
         errorBox: {
             backgroundColor: "#FEF2F2",
             color: "#991B1B",
@@ -134,9 +122,9 @@ export default function AdminSupportInboxPage() {
 
     return (
         <div style={styles.page}>
-            <section style={styles.header}>
+            <div style={styles.header}>
                 <div style={styles.titleRow}>
-                    <h1 style={styles.title}>🎧 고객센터</h1>
+                    <h2 style={styles.title}>🎧 고객센터</h2>
                 </div>
 
                 <div style={styles.tabs}>
@@ -150,7 +138,7 @@ export default function AdminSupportInboxPage() {
                         답변완료
                     </button>
                 </div>
-            </section>
+            </div>
 
             {errorMessage ? <div style={styles.errorBox}>{errorMessage}</div> : null}
 

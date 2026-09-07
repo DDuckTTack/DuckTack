@@ -34,25 +34,47 @@ function toNumber(value) {
     return Number.isFinite(n) ? n : 0;
 }
 
+const KST_DATE_TIME = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+});
+
 function normalizeDateTime(value) {
-    if (!value) return "-";
+    if (value === null || value === undefined || value === "") return "-";
+
+    let date;
 
     if (Array.isArray(value)) {
-        const [year, month, day, hour = 0, minute = 0] = value;
+        // 백엔드가 시간 배열([year, month, day, hour, minute, second])로 내려주는 경우,
+        // 서버에 저장된 값 자체가 UTC 순간을 나타내므로 UTC로 해석한 뒤 한국시간으로 변환한다.
+        const [year, month, day, hour = 0, minute = 0, second = 0] = value;
         if (!year || !month || !day) return "-";
-        return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-    }
-
-    if (typeof value === "number") {
+        date = new Date(Date.UTC(year, Number(month) - 1, day, hour, minute, second));
+    } else if (typeof value === "number") {
         const millis = value < 100000000000 ? value * 1000 : value;
-        const date = new Date(millis);
-        if (Number.isNaN(date.getTime()) || date.getFullYear() <= 1970) return "-";
-        return date.toISOString().slice(0, 16).replace("T", " ");
+        date = new Date(millis);
+    } else {
+        const text = String(value).trim();
+        if (!text || text === "0" || text.toLowerCase() === "null" || text.toLowerCase() === "undefined") return "-";
+
+        // 타임존 정보(Z 또는 +09:00 등)가 없는 문자열은 UTC로 간주해 보정한다.
+        const hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
+        date = new Date(hasTimeZone ? text : `${text}Z`);
     }
 
-    const text = String(value).trim();
-    if (!text || text === "0" || text.toLowerCase() === "null" || text.toLowerCase() === "undefined") return "-";
-    return text.slice(0, 16).replace("T", " ");
+    if (Number.isNaN(date.getTime()) || date.getFullYear() <= 1970) return "-";
+
+    const parts = KST_DATE_TIME.formatToParts(date).reduce((acc, part) => {
+        acc[part.type] = part.value;
+        return acc;
+    }, {});
+
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 function normalizeRole(role) {

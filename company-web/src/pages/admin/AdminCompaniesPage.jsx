@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "../../api/axios";
 import { useNavigate } from "react-router-dom";
+import { layout, badge, badgeColors, actionBtn } from "./adminTheme";
 
 const REGION_ORDER = ["서울", "경기", "인천", "부산", "대구", "광주", "대전", "울산", "기타"];
 
@@ -154,15 +155,15 @@ function AdminCompaniesPage() {
     const renderStatus = (company) => {
         switch (company.status) {
             case "APPROVED":
-                return <span style={{ color: "#10B981", fontWeight: "800" }}>🟢 승인 / 활성</span>;
+                return <span style={badge(badgeColors.success.bg, badgeColors.success.text)}>● 승인 / 활성</span>;
             case "PENDING":
-                return <span style={{ color: "#64748B", fontWeight: "800" }}>⚪ 승인 대기 / 비활성</span>;
+                return <span style={badge(badgeColors.neutral.bg, badgeColors.neutral.text)}>● 승인 대기 / 비활성</span>;
             case "REJECTED":
-                return <span style={{ color: "#EF4444", fontWeight: "800" }}>🔴 거절</span>;
+                return <span style={badge(badgeColors.danger.bg, badgeColors.danger.text)}>● 거절</span>;
             case "RETURNED":
-                return <span style={{ color: "#F59E0B", fontWeight: "800" }}>🟠 반려</span>;
+                return <span style={badge(badgeColors.warning.bg, badgeColors.warning.text)}>● 반려</span>;
             default:
-                return <span style={{ color: "#64748B", fontWeight: "800" }}>⚪ {company.status || "UNKNOWN"}</span>;
+                return <span style={badge(badgeColors.neutral.bg, badgeColors.neutral.text)}>● {company.status || "UNKNOWN"}</span>;
         }
     };
 
@@ -214,75 +215,63 @@ function AdminCompaniesPage() {
     const returnedCount = companies.filter((c) => c.status === "RETURNED").length;
 
     const styles = {
-        container: { padding: "40px", backgroundColor: "#F4F7FA", minHeight: "100vh" },
-        card: { backgroundColor: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 16px rgba(15, 23, 42, 0.08)" },
-        header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" },
-        title: { margin: 0, color: "#1E293B", fontSize: "24px", fontWeight: "900" },
-        refreshBtn: { padding: "10px 14px", border: "none", borderRadius: "10px", backgroundColor: "#0066FF", color: "white", fontWeight: "800", cursor: "pointer", opacity: loading ? 0.6 : 1 },
-        summary: { marginBottom: "14px", color: "#64748B", fontSize: "14px", fontWeight: "700" },
-        filterPanel: { display: "grid", gridTemplateColumns: "1fr 1.4fr auto", gap: "12px", alignItems: "center", padding: "16px", backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: "14px", marginBottom: "18px" },
-        select: { height: "44px", border: "1px solid #CBD5E1", borderRadius: "10px", padding: "0 12px", fontWeight: "800", color: "#334155", backgroundColor: "white" },
-        input: { height: "44px", border: "1px solid #CBD5E1", borderRadius: "10px", padding: "0 14px", fontWeight: "700", color: "#334155", backgroundColor: "white" },
-        resetBtn: { height: "44px", border: "none", borderRadius: "10px", padding: "0 16px", backgroundColor: "#64748B", color: "white", fontWeight: "900", cursor: "pointer" },
-        table: { width: "100%", borderCollapse: "collapse" },
-        th: { padding: "14px", borderBottom: "2px solid #EDF2F7", textAlign: "left", color: "#334155", fontSize: "14px" },
-        td: { padding: "14px", borderBottom: "1px solid #F1F5F9", color: "#334155", fontSize: "14px", verticalAlign: "middle" },
-        regionRow: { padding: "12px 14px", backgroundColor: "#EFF6FF", color: "#1D4ED8", fontWeight: "900", borderTop: "1px solid #DBEAFE", borderBottom: "1px solid #DBEAFE" },
-        smallText: { fontSize: "12px", color: "#94A3B8", marginTop: "4px" },
-        btnGroup: { display: "flex", gap: "8px", flexWrap: "wrap" },
+        ...layout,
+        refreshBtn: { ...actionBtn("primary"), padding: "10px 16px", opacity: loading ? 0.6 : 1 },
+        regionRow: { padding: "12px 24px", backgroundColor: badgeColors.info.bg, color: "#1D4ED8", fontWeight: "800", fontSize: "13px" },
         btn: (type, disabled) => {
-            const base = { padding: "8px 13px", borderRadius: "8px", border: "none", cursor: disabled ? "not-allowed" : "pointer", color: "white", fontWeight: "800", opacity: disabled ? 0.55 : 1, fontSize: "13px" };
-            if (type === "approve") return { ...base, backgroundColor: "#0066FF" };
-            if (type === "reject") return { ...base, backgroundColor: "#EF4444" };
-            if (type === "returned") return { ...base, backgroundColor: "#F59E0B" };
-            return base;
+            const map = { approve: "primary", reject: "danger", returned: "warning" };
+            return { ...actionBtn(map[type] || "outline"), cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.55 : 1 };
         },
-        empty: { padding: "30px", textAlign: "center", color: "#64748B" },
     };
 
     return (
         <div style={styles.container}>
-            <div style={styles.card}>
-                <div style={styles.header}>
-                    <h2 style={styles.title}>업체 관리</h2>
-                    <button type="button" onClick={fetchCompanies} style={styles.refreshBtn} disabled={loading}>
-                        {loading ? "불러오는 중..." : "새로고침"}
-                    </button>
+            <div style={styles.headerRow}>
+                <div style={styles.headerSection}>
+                    <h2 style={styles.title}>🏢 업체 관리</h2>
+                    <p style={styles.subTitle}>
+                        전체 {companies.length}개 · 승인 대기 {pendingCount}개 · 승인 {approvedCount}개 · 거절 {rejectedCount}개 · 반려 {returnedCount}개 · 현재 표시 {filteredCompanies.length}개
+                    </p>
                 </div>
 
-                <div style={styles.summary}>
-                    전체 {companies.length}개 · 승인 대기 {pendingCount}개 · 승인 {approvedCount}개 · 거절 {rejectedCount}개 · 반려 {returnedCount}개 · 현재 표시 {filteredCompanies.length}개
-                </div>
+                <button type="button" onClick={fetchCompanies} style={styles.refreshBtn} disabled={loading}>
+                    {loading ? "불러오는 중..." : "새로고침"}
+                </button>
+            </div>
 
-                <div style={styles.filterPanel}>
-                    <select style={styles.select} value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)}>
+            <div style={styles.filterCard}>
+                <div style={styles.selectGroup}>
+                    <span style={styles.selectLabel}>지역 선택</span>
+                    <select style={styles.selectBox} value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)}>
                         <option value="ALL">전체 지역</option>
                         {regions.map((region) => (
                             <option key={region} value={region}>{region}</option>
                         ))}
                     </select>
-
-                    <input
-                        style={styles.input}
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        placeholder="업체명, 계정, 주소, 전화번호로 검색"
-                    />
-
-                    <button
-                        type="button"
-                        style={styles.resetBtn}
-                        onClick={() => {
-                            setSelectedRegion("ALL");
-                            setSearchText("");
-                        }}
-                    >
-                        필터 초기화
-                    </button>
                 </div>
 
+                <input
+                    style={{ ...styles.inputBox, flex: 1, minWidth: "220px" }}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder="업체명, 계정, 주소, 전화번호로 검색"
+                />
+
+                <button
+                    type="button"
+                    style={styles.resetBtn}
+                    onClick={() => {
+                        setSelectedRegion("ALL");
+                        setSearchText("");
+                    }}
+                >
+                    필터 초기화
+                </button>
+            </div>
+
+            <div style={styles.tableCard}>
                 <table style={styles.table}>
-                    <thead>
+                    <thead style={styles.thead}>
                     <tr>
                         <th style={styles.th}>ID</th>
                         <th style={styles.th}>업체 정보</th>
@@ -296,7 +285,7 @@ function AdminCompaniesPage() {
                     <tbody>
                     {filteredCompanies.length === 0 ? (
                         <tr>
-                            <td colSpan="6" style={styles.empty}>조회된 업체가 없습니다.</td>
+                            <td colSpan="6" style={styles.emptyBox}>조회된 업체가 없습니다.</td>
                         </tr>
                     ) : (
                         groupedCompanies.map(([region, list]) => (
@@ -331,11 +320,11 @@ function FragmentGroup({ region, list, styles, loadingId, renderStatus, updateSt
                 const disabled = loadingId === company.id;
 
                 return (
-                    <tr key={company.id}>
+                    <tr key={company.id} style={styles.tr}>
                         <td style={styles.td}>{company.id}</td>
 
                         <td style={styles.td}>
-                            <div style={{ fontWeight: "900", color: "#1E293B" }}>{company.name || "-"}</div>
+                            <div style={{ fontWeight: "800", color: "#1e293b" }}>{company.name || "-"}</div>
                             <div style={styles.smallText}>계정: {company.username || "-"}</div>
                             {company.address ? <div style={styles.smallText}>주소: {company.address}</div> : null}
                             {company.phone ? <div style={styles.smallText}>연락처: {company.phone}</div> : null}
@@ -346,18 +335,16 @@ function FragmentGroup({ region, list, styles, loadingId, renderStatus, updateSt
 
                         <td style={styles.td}>
                             {company.partner ? (
-                                <span style={{ color: "#0066FF", fontWeight: "800" }}>제휴</span>
+                                <span style={{ color: "#0066ff", fontWeight: "700" }}>제휴</span>
                             ) : (
-                                <span style={{ color: "#94A3B8", fontWeight: "800" }}>비제휴</span>
+                                <span style={{ color: "#94a3b8", fontWeight: "700" }}>비제휴</span>
                             )}
                         </td>
 
-                        <td style={styles.td}>
-                            <div style={styles.btnGroup}>
-                                <button type="button" disabled={disabled} style={styles.btn("approve", disabled)} onClick={() => updateStatus(company.id, "APPROVED")}>승인</button>
-                                <button type="button" disabled={disabled} style={styles.btn("reject", disabled)} onClick={() => updateStatus(company.id, "REJECTED")}>거절</button>
-                                <button type="button" disabled={disabled} style={styles.btn("returned", disabled)} onClick={() => updateStatus(company.id, "RETURNED")}>반려</button>
-                            </div>
+                        <td style={{ ...styles.td, textAlign: "right" }}>
+                            <button type="button" disabled={disabled} style={styles.btn("approve", disabled)} onClick={() => updateStatus(company.id, "APPROVED")}>승인</button>
+                            <button type="button" disabled={disabled} style={styles.btn("reject", disabled)} onClick={() => updateStatus(company.id, "REJECTED")}>거절</button>
+                            <button type="button" disabled={disabled} style={{ ...styles.btn("returned", disabled), marginRight: 0 }} onClick={() => updateStatus(company.id, "RETURNED")}>반려</button>
                         </td>
                     </tr>
                 );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listCommunityReports, reportReasonLabel } from "../../api/community";
+import { layout, actionBtn } from "./adminTheme";
 
 const KOREA_DATE_TIME = new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
@@ -55,33 +56,33 @@ export default function AdminCommunityReportsPage() {
     }, []);
 
     const styles = {
-        page: { fontFamily: "'Pretendard', sans-serif", color: "#0F172A" },
-        title: { fontSize: 28, fontWeight: 900, marginBottom: 6 },
-        subtitle: { color: "#64748B", fontSize: 14, fontWeight: 600, marginBottom: 20 },
-        toolbar: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-        count: { fontSize: 14, fontWeight: 900, color: "#DC2626" },
-        refresh: { padding: "9px 14px", borderRadius: 10, border: "1px solid #CBD5E1", background: "white", cursor: "pointer", fontWeight: 800 },
+        page: layout.container,
+        title: layout.title,
+        subtitle: { ...layout.subTitle, marginBottom: "24px" },
+        toolbar: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+        count: { fontSize: 14, fontWeight: 700, color: "#B91C1C" },
+        refresh: actionBtn("outline"),
         layout: { display: "grid", gridTemplateColumns: "minmax(320px, 0.9fr) minmax(420px, 1.1fr)", gap: 18, alignItems: "start" },
         list: { display: "grid", gap: 10 },
         card: (active) => ({ padding: 18, borderRadius: 16, border: active ? "2px solid #DC2626" : "1px solid #FECACA", background: active ? "#FFF7F7" : "white", textAlign: "left", cursor: "pointer" }),
-        reason: { color: "#B91C1C", fontSize: 15, fontWeight: 900, marginBottom: 7 },
-        meta: { color: "#64748B", fontSize: 12, fontWeight: 700, lineHeight: 1.6 },
+        reason: { color: "#B91C1C", fontSize: 15, fontWeight: 800, marginBottom: 7 },
+        meta: { color: "#64748b", fontSize: 12, fontWeight: 700, lineHeight: 1.6 },
         content: { marginTop: 12, padding: 12, borderRadius: 10, background: "#F8FAFC", color: "#334155", fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" },
         detail: { marginTop: 8, color: "#7F1D1D", fontSize: 12, fontWeight: 700 },
-        empty: { padding: 70, textAlign: "center", borderRadius: 18, background: "white", border: "1px solid #E2E8F0", color: "#94A3B8", fontWeight: 800 },
-        panel: { position: "sticky", top: 20, padding: 24, borderRadius: 18, background: "white", border: "1px solid #E2E8F0", boxShadow: "0 10px 26px rgba(15,23,42,.06)" },
-        panelTitle: { fontSize: 19, fontWeight: 900, marginBottom: 16 },
-        section: { marginTop: 18, paddingTop: 16, borderTop: "1px solid #E2E8F0" },
-        sectionTitle: { fontSize: 13, fontWeight: 900, color: "#475569", marginBottom: 9 },
+        empty: { ...layout.tableCard, ...layout.emptyBox, padding: 70, fontWeight: 700 },
+        panel: { ...layout.tableCard, position: "sticky", top: 20, padding: 24, borderRadius: 24 },
+        panelTitle: { fontSize: 19, fontWeight: 800, marginBottom: 16 },
+        section: { marginTop: 18, paddingTop: 16, borderTop: "1px solid #f1f5f9" },
+        sectionTitle: { fontSize: 13, fontWeight: 800, color: "#475569", marginBottom: 9 },
         infoGrid: { display: "grid", gridTemplateColumns: "100px 1fr", gap: "7px 12px", fontSize: 13 },
-        label: { color: "#94A3B8", fontWeight: 800 },
-        value: { color: "#1E293B", fontWeight: 700, overflowWrap: "anywhere" },
+        label: { color: "#94a3b8", fontWeight: 700 },
+        value: { color: "#1e293b", fontWeight: 700, overflowWrap: "anywhere" },
     };
 
     return (
         <div style={styles.page}>
-            <h1 style={styles.title}>🚨 커뮤니티 신고함</h1>
-            <div style={styles.subtitle}>접수된 게시글·댓글 신고의 사유와 대상을 확인합니다.</div>
+            <h2 style={styles.title}>🚨 커뮤니티 신고함</h2>
+            <p style={styles.subtitle}>접수된 게시글·댓글 신고의 사유와 대상을 확인합니다.</p>
             <div style={styles.toolbar}>
                 <span style={styles.count}>총 {reports.length}건</span>
                 <button type="button" style={styles.refresh} onClick={load}>새로고침</button>

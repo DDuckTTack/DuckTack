@@ -1,131 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "../../api/axios";
+import { layout, badge, badgeColors, actionBtn } from "./adminTheme";
 
 const REGION_ORDER = ["서울", "경기", "인천", "부산", "대구", "광주", "대전", "울산"];
 
 const styles = {
-    container: {
-        padding: "40px",
-        backgroundColor: "#F8FAFC",
-        minHeight: "100%",
-        fontFamily: "'Pretendard', sans-serif",
-    },
-    headerSection: {
-        marginBottom: "32px",
-    },
-    title: {
-        fontSize: "28px",
-        fontWeight: "800",
-        color: "#1e293b",
-        margin: 0,
-        letterSpacing: "-0.5px"
-    },
-    subTitle: {
-        color: "#94a3b8",
-        fontSize: "14px",
-        marginTop: "8px",
-        fontWeight: "500"
-    },
-    filterCard: {
-        backgroundColor: "white",
-        padding: "20px 24px",
-        borderRadius: "16px",
-        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
-        marginBottom: "24px",
-        display: "flex",
-        alignItems: "center",
-        gap: "16px",
-        border: "1px solid rgba(255,255,255,0.8)",
-        flexWrap: "wrap",
-    },
-    selectGroup: {
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-    },
-    selectLabel: {
-        fontSize: "14px",
-        fontWeight: "700",
-        color: "#475569",
-        whiteSpace: "nowrap",
-    },
+    ...layout,
     selectBox: {
-        padding: "10px 16px",
-        borderRadius: "10px",
-        border: "1px solid #e2e8f0",
-        backgroundColor: "#F8FAFC",
-        fontSize: "14px",
-        fontWeight: "600",
-        color: "#1e293b",
-        outline: "none",
-        cursor: "pointer",
-        minWidth: "200px"
-    },
-    tableCard: {
-        backgroundColor: "white",
-        borderRadius: "24px",
-        boxShadow: "0 20px 25px -5px rgba(0,0,0,0.05)",
-        border: "1px solid rgba(255,255,255,0.8)",
-        overflow: "hidden",
-    },
-    table: {
-        width: "100%",
-        borderCollapse: "collapse",
-        textAlign: "left"
-    },
-    thead: {
-        backgroundColor: "#F8FAFC",
-        borderBottom: "1px solid #f1f5f9"
-    },
-    th: {
-        padding: "16px 24px",
-        fontSize: "13px",
-        fontWeight: "700",
-        color: "#64748b",
-        textTransform: "uppercase",
-        letterSpacing: "0.5px",
-    },
-    tr: {
-        borderBottom: "1px solid #f1f5f9",
-        transition: "background-color 0.2s"
-    },
-    td: {
-        padding: "20px 24px",
-        fontSize: "15px",
-        color: "#334155",
-        verticalAlign: "middle"
+        ...layout.selectBox,
+        minWidth: "200px",
     },
     statusBadge: (status) => {
-        const colors = {
-            ACCEPTED: { bg: "#DCFCE7", text: "#15803D" },
-            REJECTED: { bg: "#FEE2E2", text: "#B91C1C" },
-            PENDING: { bg: "#F1F5F9", text: "#64748B" }
+        const map = {
+            ACCEPTED: badgeColors.success,
+            REJECTED: badgeColors.danger,
+            PENDING: badgeColors.neutral,
         };
 
-        const current = colors[status] || colors.PENDING;
-
-        return {
-            padding: "4px 12px",
-            borderRadius: "8px",
-            fontSize: "12px",
-            fontWeight: "700",
-            backgroundColor: current.bg,
-            color: current.text,
-        };
+        const current = map[status] || badgeColors.neutral;
+        return badge(current.bg, current.text);
     },
-    actionBtn: (type) => ({
-        padding: "8px 16px",
-        borderRadius: "10px",
-        border: type === "accept" ? "none" : "1px solid #e2e8f0",
-        backgroundColor: type === "accept" ? "#0066ff" : "white",
-        color: type === "accept" ? "white" : "#64748b",
-        fontSize: "13px",
-        fontWeight: "700",
-        cursor: "pointer",
-        marginRight: "8px",
-        transition: "all 0.2s",
-    })
+    actionBtn: (type) => actionBtn(type === "accept" ? "primary" : "outline"),
 };
 
 function ReservationsPage() {
