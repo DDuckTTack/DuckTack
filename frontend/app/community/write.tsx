@@ -68,7 +68,7 @@ export default function CommunityWrite() {
           setRegion({ regionCode: post.regionCode, regionName: post.regionName });
         }
       } catch (e) {
-        console.log("게시글 조회 실패:", e);
+        if (__DEV__) console.warn("[community] 게시글 조회 실패", (e as any)?.response?.status);
         Alert.alert("불러오기 실패", "게시글 정보를 가져오지 못했습니다.");
         router.back();
       } finally {
@@ -120,7 +120,7 @@ export default function CommunityWrite() {
         router.replace(`/community/${created.postId}`);
       }
     } catch (e: any) {
-      console.log(isEdit ? "게시글 수정 실패:" : "게시글 등록 실패:", e);
+      if (__DEV__) console.warn(isEdit ? "[community] 게시글 수정 실패" : "[community] 게시글 등록 실패", e?.response?.status);
       Alert.alert(isEdit ? "수정 실패" : "등록 실패", e?.response?.data?.message || "다시 시도해주세요.");
     } finally {
       setSubmitting(false);

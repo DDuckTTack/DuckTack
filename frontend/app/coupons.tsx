@@ -41,7 +41,7 @@ export default function CouponsScreen() {
       const result = await listMyCoupons();
       setCoupons(result);
     } catch (e) {
-      console.log("쿠폰 목록 조회 실패:", e);
+      if (__DEV__) console.warn("[coupons] 목록 조회 실패", (e as any)?.response?.status);
       setCoupons([]);
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export default function CouponsScreen() {
                 await useCoupon(coupon.couponId);
                 await load();
               } catch (e: any) {
-                console.log("쿠폰 사용 처리 실패:", e);
+                if (__DEV__) console.warn("[coupons] 사용 처리 실패", e?.response?.status);
                 Alert.alert("처리 실패", e?.response?.data?.message || "다시 시도해주세요.");
               } finally {
                 setUsingId(null);

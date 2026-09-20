@@ -179,7 +179,7 @@ export default function ExpertBooking() {
         const res = await apiClient.get(`/api/public/companies/${parsedVendorId}/unavailable-dates`);
         setUnavailableDates(extractList(res.data).map((v) => String(v).slice(0, 10)));
       } catch (e: any) {
-        console.log("휴무일 조회 실패:", e?.response?.data ?? e?.message ?? e);
+        if (__DEV__) console.warn("[expert-booking] 휴무일 조회 실패", e?.response?.status);
         setUnavailableDates([]);
       }
     }
@@ -196,7 +196,7 @@ export default function ExpertBooking() {
         setUnavailableTimes(list);
         if (list.includes(normalizeTime(visitTime))) setVisitTime("");
       } catch (e: any) {
-        console.log("차단 시간 조회 실패:", e?.response?.data ?? e?.message ?? e);
+        if (__DEV__) console.warn("[expert-booking] 차단 시간 조회 실패", e?.response?.status);
         setUnavailableTimes([]);
       } finally {
         setAvailabilityLoading(false);
@@ -235,11 +235,10 @@ export default function ExpertBooking() {
         requestNote: requestNote.trim(),
         historyId: parsedHistoryId,
       };
-      console.log("예약 요청 body:", body);
       await apiClient.post("/api/reservations", body);
       Alert.alert("예약 신청 완료", "전문업체 예약 신청이 완료되었습니다. 홈 화면에서 예약 진행 상태를 확인할 수 있습니다.", [{ text: "확인", onPress: () => router.replace("/(tabs)") }]);
     } catch (e: any) {
-    console.log("예약 실패:", e?.response?.data ?? e?.message ?? e);
+    if (__DEV__) console.warn("[expert-booking] 예약 실패", e?.response?.status);
 
     const status = e?.response?.status;
     const serverMessage = e?.response?.data?.message;

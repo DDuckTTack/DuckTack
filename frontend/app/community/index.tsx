@@ -77,7 +77,7 @@ export default function CommunityBoard() {
       setPage(result.number);
       setHasMore(!result.last);
     } catch (e) {
-      console.log("커뮤니티 목록 조회 실패:", e);
+      if (__DEV__) console.warn("[community] 목록 조회 실패", (e as any)?.response?.status);
       if (reset) setPosts([]);
     } finally {
       setLoading(false);

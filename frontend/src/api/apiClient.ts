@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
         const status = error?.response?.status;
 
         if (__DEV__) {
-            console.log("응답 실패:", status, error?.response?.data);
+            console.warn("응답 실패:", status, error?.config?.url);
         }
 
         if (status === 401) {
