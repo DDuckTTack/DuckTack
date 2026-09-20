@@ -68,7 +68,7 @@ export default function SupportScreen() {
           lastIdRef.current = initialMessages[initialMessages.length - 1].id;
         }
       } catch (e) {
-        console.log("고객센터 조회 실패:", e);
+        if (__DEV__) console.warn("[support] 조회 실패", (e as any)?.response?.status);
         Alert.alert("불러오기 실패", "고객센터 정보를 가져오지 못했습니다.");
         router.back();
       } finally {
@@ -86,7 +86,7 @@ export default function SupportScreen() {
         lastIdRef.current = newMessages[newMessages.length - 1].id;
       }
     } catch (e) {
-      console.log("고객센터 폴링 실패:", e);
+      if (__DEV__) console.warn("[support] 폴링 실패", (e as any)?.response?.status);
     }
   }, []);
 
@@ -118,7 +118,7 @@ export default function SupportScreen() {
       lastIdRef.current = sent.id;
       setInput("");
     } catch (e: any) {
-      console.log("문의 전송 실패:", e);
+      if (__DEV__) console.warn("[support] 문의 전송 실패", e?.response?.status);
       Alert.alert("전송 실패", e?.response?.data?.message || "다시 시도해주세요.");
     } finally {
       setSending(false);

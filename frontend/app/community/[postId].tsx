@@ -104,7 +104,7 @@ export default function CommunityPostDetail() {
       setPost(postData);
       setComments(commentData);
     } catch (e) {
-      console.log("게시글 조회 실패:", e);
+      if (__DEV__) console.warn("[community] 게시글 조회 실패", (e as any)?.response?.status);
       Alert.alert("불러오기 실패", "게시글을 찾을 수 없습니다.");
       router.back();
     } finally {
@@ -117,7 +117,7 @@ export default function CommunityPostDetail() {
       const data = await getComments(postId);
       setComments(data);
     } catch (e) {
-      console.log("댓글 조회 실패:", e);
+      if (__DEV__) console.warn("[community] 댓글 조회 실패", (e as any)?.response?.status);
     }
   }
 
@@ -133,7 +133,7 @@ export default function CommunityPostDetail() {
       const result = post.likedByMe ? await unlikePost(post.postId) : await likePost(post.postId);
       setPost((prev) => (prev ? { ...prev, likeCount: result.likeCount, likedByMe: result.likedByMe } : prev));
     } catch (e) {
-      console.log("좋아요 처리 실패:", e);
+      if (__DEV__) console.warn("[community] 좋아요 처리 실패", (e as any)?.response?.status);
     } finally {
       setLiking(false);
     }
@@ -153,7 +153,7 @@ export default function CommunityPostDetail() {
             Alert.alert("삭제 완료", "게시글이 삭제되었습니다.");
             router.back();
           } catch (e: any) {
-            console.log("게시글 삭제 실패:", e);
+            if (__DEV__) console.warn("[community] 게시글 삭제 실패", e?.response?.status);
             Alert.alert("삭제 실패", e?.response?.data?.message || "다시 시도해주세요.");
           } finally {
             setDeletingPost(false);
@@ -191,7 +191,7 @@ export default function CommunityPostDetail() {
       setEditingCommentId(null);
       await loadComments();
     } catch (e: any) {
-      console.log("댓글 등록/수정 실패:", e);
+      if (__DEV__) console.warn("[community] 댓글 등록/수정 실패", e?.response?.status);
       Alert.alert("실패", e?.response?.data?.message || "다시 시도해주세요.");
     } finally {
       setSubmittingComment(false);
@@ -212,7 +212,7 @@ export default function CommunityPostDetail() {
             if (editingCommentId === commentId) cancelEditComment();
             await loadComments();
           } catch (e: any) {
-            console.log("댓글 삭제 실패:", e);
+            if (__DEV__) console.warn("[community] 댓글 삭제 실패", e?.response?.status);
             Alert.alert("삭제 실패", e?.response?.data?.message || "다시 시도해주세요.");
           } finally {
             setDeletingCommentId(null);
@@ -227,7 +227,7 @@ export default function CommunityPostDetail() {
       const conversation = await getOrCreateConversation({ targetUserId });
       router.push(`/messages/${conversation.conversationId}`);
     } catch (e: any) {
-      console.log("쪽지 생성 실패:", e);
+      if (__DEV__) console.warn("[community] 쪽지 생성 실패", e?.response?.status);
       Alert.alert("쪽지 보내기 실패", e?.response?.data?.message || "다시 시도해주세요.");
     }
   }
@@ -263,7 +263,7 @@ export default function CommunityPostDetail() {
       Alert.alert("신고 접수", "신고가 접수되었습니다.");
       closeReport();
     } catch (e: any) {
-      console.log("신고 실패:", e);
+      if (__DEV__) console.warn("[community] 신고 실패", e?.response?.status);
       Alert.alert("신고 실패", e?.response?.data?.message || "이미 신고했거나 처리할 수 없습니다.");
     } finally {
       setReportSubmitting(false);

@@ -52,7 +52,7 @@ export default function CommunityMy() {
       const posts = await scanMyPosts(meData.username);
       setMyPosts(posts);
     } catch (e) {
-      console.log("내 활동 조회 실패:", e);
+      if (__DEV__) console.warn("[community] 내 활동 조회 실패", (e as any)?.response?.status);
       setMyPosts([]);
     } finally {
       setLoading(false);

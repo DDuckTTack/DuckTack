@@ -140,8 +140,6 @@ export default function MyPage() {
         listMyReports(),
       ]);
 
-      console.log("마이페이지 리포트 원본:", reportData);
-
       setMe(meData);
       setReports(reportData);
       setEditResidenceType(meData.residenceType);
@@ -152,8 +150,8 @@ export default function MyPage() {
       setPostalCode(meData.postalCode || "");
       setAddressLat(meData.latitude);
       setAddressLng(meData.longitude);
-    } catch (e) {
-      console.log("마이페이지 불러오기 실패:", e);
+    } catch (e: any) {
+      if (__DEV__) console.warn("[mypage] 불러오기 실패", e?.response?.status);
       setMe(null);
       setReports([]);
       Alert.alert("불러오기 실패");
@@ -192,9 +190,6 @@ export default function MyPage() {
 
   function handleGenerate(report: MyReportItem) {
     const routeId = getReportRouteId(report);
-
-    console.log("PDF 작성 report item:", report);
-    console.log("PDF 작성 이동 routeId:", routeId);
 
     if (!routeId) {
       Alert.alert(

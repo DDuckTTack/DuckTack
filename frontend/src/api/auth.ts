@@ -79,13 +79,7 @@ function pickBooleanAvailable(body: any): boolean {
     if (typeof body?.[key] === "boolean") return !body[key];
   }
 
-  if (__DEV__) {
-    console.warn(
-        "[중복검사] 사용 가능 여부를 해석할 수 없는 응답:",
-        JSON.stringify(body, null, 2)
-    );
-  }
-
+  if (__DEV__) console.warn("[auth] 중복검사 응답 형식을 해석할 수 없음");
   throw new Error("INVALID_AVAILABLE_RESPONSE");
 }
 
@@ -97,12 +91,7 @@ function pickBooleanFlag(body: any, fieldName: string): boolean {
   const value = data?.[fieldName] ?? body?.[fieldName];
 
   if (typeof value !== "boolean") {
-    if (__DEV__) {
-      console.warn(
-          `[${fieldName}] 응답 해석 실패:`,
-          JSON.stringify(body, null, 2)
-      );
-    }
+    if (__DEV__) console.warn(`[auth] ${fieldName} 응답 형식을 해석할 수 없음`);
     throw new Error(`INVALID_${fieldName.toUpperCase()}_RESPONSE`);
   }
 
@@ -138,21 +127,9 @@ export async function checkUsernameAvailable(username: string): Promise<boolean>
     const res = await apiClient.get("/api/auth/check-username", {
       params: { username: trimmed },
     });
-
-    if (__DEV__) console.log("[아이디 중복검사] 요청:", trimmed);
-    if (__DEV__) console.log("[아이디 중복검사] 응답:", JSON.stringify(res.data, null, 2));
-
     return pickBooleanAvailable(res.data);
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[아이디 중복검사] 실패:", {
-        username: trimmed,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 아이디 중복검사 실패", error?.response?.status);
     throw error;
   }
 }
@@ -166,28 +143,9 @@ export async function checkPhoneAvailable(phoneNumber: string): Promise<boolean>
     const res = await apiClient.get("/api/auth/check-phone", {
       params: { phoneNumber: normalized },
     });
-
-    if (__DEV__) {
-      console.log("[휴대폰 중복검사] 요청:", {
-        input: phoneNumber,
-        normalized,
-      });
-    }
-
-    if (__DEV__) console.log("[휴대폰 중복검사] 응답:", JSON.stringify(res.data, null, 2));
-
     return pickBooleanAvailable(res.data);
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[휴대폰 중복검사] 실패:", {
-        input: phoneNumber,
-        normalized,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 휴대폰 중복검사 실패", error?.response?.status);
     throw error;
   }
 }
@@ -201,30 +159,9 @@ export async function checkEmailAvailable(email: string): Promise<boolean> {
     const res = await apiClient.get("/api/auth/check-email", {
       params: { email: normalized },
     });
-
-    if (__DEV__) console.log("[이메일 중복검사] 요청:", normalized);
-    if (__DEV__) console.log("[이메일 중복검사] 응답:", JSON.stringify(res.data, null, 2));
-
-    const available = pickBooleanAvailable(res.data);
-
-    if (__DEV__) {
-      console.log(
-          "[이메일 중복검사] 해석 결과:",
-          available ? "사용 가능" : "사용 불가"
-      );
-    }
-
-    return available;
+    return pickBooleanAvailable(res.data);
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[이메일 중복검사] 실패:", {
-        email: normalized,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 이메일 중복검사 실패", error?.response?.status);
     throw error;
   }
 }
@@ -233,23 +170,11 @@ export async function sendEmailVerificationCode(email: string): Promise<void> {
   const normalized = normalizeEmail(email);
 
   try {
-    if (__DEV__) console.log("[회원가입 이메일 인증] 발송 요청:", normalized);
-
     await apiClient.post("/api/auth/email/send-code", {
       email: normalized,
     });
-
-    if (__DEV__) console.log("[회원가입 이메일 인증] 발송 요청 성공:", normalized);
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[회원가입 이메일 인증] 발송 실패:", {
-        email: normalized,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 이메일 인증코드 발송 실패", error?.response?.status);
     throw error;
   }
 }
@@ -266,21 +191,9 @@ export async function verifyEmailCode(
       email: normalizedEmail,
       code: normalizedCode,
     });
-
-    if (__DEV__) console.log("[회원가입 이메일 인증] 인증 응답:", JSON.stringify(res.data, null, 2));
-
     return pickBooleanFlag(res.data, "verified");
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[회원가입 이메일 인증] 인증 실패:", {
-        email: normalizedEmail,
-        code: normalizedCode,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 이메일 인증 실패", error?.response?.status);
     throw error;
   }
 }
@@ -289,24 +202,11 @@ export async function sendPasswordResetCode(email: string): Promise<void> {
   const normalized = normalizeEmail(email);
 
   try {
-    if (__DEV__) console.log("[비밀번호 재설정] 인증코드 발송 요청:", normalized);
-
     await apiClient.post("/api/auth/password/send-reset-code", {
       email: normalized,
     });
-
-    if (__DEV__) console.log("[비밀번호 재설정] 인증코드 발송 요청 성공:", normalized);
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[비밀번호 재설정] 인증코드 발송 실패:", {
-        email: normalized,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-        url: error?.config?.url,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 비밀번호 재설정 코드 발송 실패", error?.response?.status);
     throw error;
   }
 }
@@ -323,21 +223,9 @@ export async function verifyPasswordResetCode(
       email: normalizedEmail,
       code: normalizedCode,
     });
-
-    if (__DEV__) console.log("[비밀번호 재설정] 인증코드 확인 응답:", JSON.stringify(res.data, null, 2));
-
     return pickBooleanFlag(res.data, "verified");
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[비밀번호 재설정] 인증코드 확인 실패:", {
-        email: normalizedEmail,
-        code: normalizedCode,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 비밀번호 재설정 코드 확인 실패", error?.response?.status);
     throw error;
   }
 }
@@ -355,24 +243,8 @@ export async function resetPassword(req: {
       code: req.code.trim(),
       newPassword: req.newPassword,
     });
-
-    if (__DEV__) {
-      console.log("[비밀번호 재설정] 비밀번호 변경 성공:", {
-        username: req.username.trim(),
-        email: normalizeEmail(req.email),
-      });
-    }
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[비밀번호 재설정] 비밀번호 변경 실패:", {
-        username: req.username.trim(),
-        email: normalizeEmail(req.email),
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 비밀번호 변경 실패", error?.response?.status);
     throw error;
   }
 }
@@ -386,17 +258,6 @@ export async function signup(req: SignupRequest): Promise<void> {
   const normalizedEmail = normalizeEmail(req.email);
 
   try {
-    if (__DEV__) {
-      console.log("[회원가입] 요청:", {
-        username: req.username.trim(),
-        email: normalizedEmail,
-        phoneNumber: normalizedPhone,
-        residenceType: req.residenceType,
-        rentType: req.rentType,
-        address: req.address?.trim() || "",
-      });
-    }
-
     await apiClient.post("/api/auth/signup", {
       username: req.username.trim(),
       email: normalizedEmail,
@@ -411,26 +272,8 @@ export async function signup(req: SignupRequest): Promise<void> {
       privacyAgreed: true,
       marketingAgreed: false,
     });
-
-    if (__DEV__) {
-      console.log("[회원가입] 성공:", {
-        username: req.username.trim(),
-        email: normalizedEmail,
-        phoneNumber: normalizedPhone,
-      });
-    }
   } catch (error: any) {
-    if (__DEV__) {
-      console.log("[회원가입] 실패:", {
-        username: req.username.trim(),
-        email: normalizedEmail,
-        phoneNumber: normalizedPhone,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-    }
-
+    if (__DEV__) console.warn("[auth] 회원가입 실패", error?.response?.status);
     throw error;
   }
 }

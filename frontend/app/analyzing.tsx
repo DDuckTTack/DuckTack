@@ -39,11 +39,7 @@ export default function Analyzing() {
       } catch (e: any) {
         if (!alive) return;
 
-        console.error(
-            "[analyzing] startDiagnosis failed",
-            e?.response?.status,
-            e?.response?.data ?? e
-        );
+        if (__DEV__) console.warn("[analyzing] 진단 시작 실패", e?.response?.status);
 
         const status = e?.response?.status;
         const code = String(e?.response?.data?.code ?? e?.message ?? "");

@@ -6,9 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   Platform,
-  Image,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -391,13 +391,8 @@ export default function Result() {
         setLoading(true);
         setData(null);
 
-        console.log("📌 [RESULT] route params:", params);
-
         if (params.historyId) {
           const historyResult = await fetchHistoryResult(String(params.historyId));
-
-          console.log("📌 [RESULT] loaded by historyId:", historyResult);
-
           setData(historyResult);
           return;
         }
@@ -405,31 +400,17 @@ export default function Result() {
         if (params.diagnosisId) {
           try {
             const diagnosisResult = await fetchDiagnosisResult(String(params.diagnosisId));
-
-            console.log("📌 [RESULT] loaded by diagnosisId:", diagnosisResult);
-
             setData(diagnosisResult);
             return;
           } catch (e: any) {
-            console.log("⚠️ [RESULT] diagnosisId 직접 조회 실패, historyId 대체 조회 시도:", {
-              diagnosisId: params.diagnosisId,
-              status: e?.response?.status,
-              data: e?.response?.data,
-              url: e?.config?.url,
-            });
-
+            if (__DEV__) console.warn("[result] diagnosisId 조회 실패, historyId로 대체", e?.response?.status);
             const historyResult = await fetchHistoryResult(String(params.diagnosisId));
-
-            console.log("📌 [RESULT] fallback loaded by history id:", historyResult);
-
             setData(historyResult);
             return;
           }
         }
 
         const result = await getLastDiagnosisResult();
-
-        console.log("📌 [RESULT] loaded by last diagnosis:", result);
 
         if (!result) {
           Alert.alert("결과 없음", "최근 진단 결과가 없습니다.");
@@ -439,13 +420,7 @@ export default function Result() {
 
         setData(mapLastDiagnosisToResult(result));
       } catch (e: any) {
-        console.log("❌ [RESULT] load failed:", {
-          message: e?.message,
-          status: e?.response?.status,
-          data: e?.response?.data,
-          url: e?.config?.url,
-        });
-
+        if (__DEV__) console.warn("[result] 진단 결과 조회 실패", e?.response?.status);
         Alert.alert("불러오기 실패", "진단 결과를 불러오지 못했습니다.");
         setData(null);
       } finally {
@@ -537,15 +512,14 @@ export default function Result() {
               <Image
                   source={{ uri: data.imageUrl }}
                   style={styles.diagnosisImage}
-                  resizeMode="cover"
-                  onError={(e) => {
-                    console.log("❌ [RESULT] image load failed:", e.nativeEvent);
-                    console.log("❌ [RESULT] failed image url:", data.imageUrl);
-                  }}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={150}
+                  onError={() => { if (__DEV__) console.warn("[result] 진단 이미지 로드 실패"); }}
               />
           ) : (
               <View style={styles.emptyImageBox}>
-                <Text style={styles.emptyImageText}>진단 이미지 URL이 응답되지 않았습니다.</Text>
+                <Text style={styles.emptyImageText}>진단 사진을 불러오지 못했어요.</Text>
               </View>
           )}
 

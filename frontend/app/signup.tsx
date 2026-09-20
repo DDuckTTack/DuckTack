@@ -169,12 +169,6 @@ export default function Signup() {
         Alert.alert("사용 불가", "이미 사용 중인 아이디입니다.");
       }
     } catch (error: any) {
-      console.log("[회원가입] 아이디 중복확인 실패:", {
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-
       if (isDuplicateResponse(error)) {
         setUsernameChecked(false);
         Alert.alert("사용 불가", "이미 사용 중인 아이디입니다.");
@@ -207,14 +201,7 @@ export default function Signup() {
     try {
       setCheckingPhone(true);
 
-      console.log("[회원가입] 휴대폰 중복확인 요청:", {
-        input: trimmedPhone,
-        normalized: normalizedPhone,
-      });
-
       const ok = await checkPhoneAvailable(normalizedPhone);
-
-      console.log("[회원가입] 휴대폰 중복확인 결과:", ok);
 
       setPhoneChecked(ok);
 
@@ -224,14 +211,6 @@ export default function Signup() {
         Alert.alert("사용 불가", "이미 등록된 휴대폰 번호입니다.");
       }
     } catch (error: any) {
-      console.log("[회원가입] 휴대폰 중복확인 실패:", {
-        input: trimmedPhone,
-        normalized: normalizedPhone,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-
       if (isDuplicateResponse(error)) {
         setPhoneChecked(false);
         Alert.alert("사용 불가", "이미 등록된 휴대폰 번호입니다.");
@@ -274,13 +253,6 @@ export default function Signup() {
         Alert.alert("사용 불가", "이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.");
       }
     } catch (error: any) {
-      console.log("[회원가입] 이메일 중복확인 실패:", {
-        email: trimmedEmail.toLowerCase(),
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-
       if (isDuplicateResponse(error)) {
         setEmailChecked(false);
         setEmailCodeSent(false);
@@ -307,8 +279,6 @@ export default function Signup() {
     try {
       setSendingEmailCode(true);
 
-      console.log("[회원가입] 이메일 인증코드 발송 요청:", trimmedEmail.toLowerCase());
-
       await sendEmailVerificationCode(trimmedEmail.toLowerCase());
 
       setEmailCodeSent(true);
@@ -320,17 +290,10 @@ export default function Signup() {
           "이메일로 인증코드를 보냈습니다. 메일함과 스팸함을 확인해주세요."
       );
     } catch (error: any) {
-      console.log("[회원가입] 이메일 인증코드 발송 실패:", {
-        email: trimmedEmail.toLowerCase(),
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-
       Alert.alert(
           "발송 실패",
           error?.response?.data?.message ||
-          "인증코드를 보내지 못했습니다. 이메일 주소와 메일 서버 설정을 확인해주세요."
+          "인증코드를 보내지 못했어요. 이메일 주소를 확인해 주세요."
       );
     } finally {
       setSendingEmailCode(false);
@@ -359,14 +322,6 @@ export default function Signup() {
         Alert.alert("인증 실패", "인증코드가 일치하지 않습니다.");
       }
     } catch (error: any) {
-      console.log("[회원가입] 이메일 인증 실패:", {
-        email: trimmedEmail.toLowerCase(),
-        code: verificationCode.trim(),
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-
       Alert.alert(
           "인증 실패",
           error?.response?.data?.message ||
@@ -435,15 +390,6 @@ export default function Signup() {
       Alert.alert("가입 완료", "회원가입이 완료되었습니다. 로그인해주세요.");
       router.replace("/login");
     } catch (error: any) {
-      console.log("[회원가입] 가입 실패:", {
-        username: trimmedUsername,
-        email: trimmedEmail.toLowerCase(),
-        phoneNumber: normalizedPhone,
-        message: error?.message,
-        status: error?.response?.status,
-        data: error?.response?.data,
-      });
-
       Alert.alert(
           "가입 실패",
           error?.response?.data?.message ||

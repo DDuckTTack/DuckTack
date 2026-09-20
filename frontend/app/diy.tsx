@@ -142,36 +142,21 @@ async function fetchHistoryDetail(historyId: string): Promise<HistoryDetailLike>
 
 async function fetchActiveProducts(category: ProductCategory): Promise<DiyMaterial[]> {
   try {
-    console.log("🛒 [DIY] 상품 조회 요청 category:", category);
-
     const res = await apiClient.get("/api/products", {
       params: { category },
     });
 
-    console.log("🛒 [DIY] 상품 조회 응답:", JSON.stringify(res.data, null, 2));
-
     const products = extractList(res.data) as ProductItem[];
 
-    const mapped: DiyMaterial[] = products
+    return products
         .filter((p) => p?.coupangUrl)
         .map((p) => ({
           id: `db-product-${p.id}`,
           name: p.name,
           buyUrl: p.coupangUrl || undefined,
         }));
-
-    console.log("🛒 [DIY] 화면 표시 상품:", mapped);
-
-    return mapped;
   } catch (e: any) {
-    console.log("❌ [DIY] DB 상품 조회 실패:", {
-      message: e?.message,
-      status: e?.response?.status,
-      data: e?.response?.data,
-      url: e?.config?.url,
-      params: e?.config?.params,
-    });
-
+    if (__DEV__) console.warn("[diy] 추천 상품 조회 실패", e?.response?.status);
     return [];
   }
 }
@@ -263,18 +248,10 @@ export default function Diy() {
         setGuide(null);
         setUsedDbProducts(false);
 
-        console.log("🚪 [DIY] route params:", {
-          diagnosisId,
-          historyId,
-          issueType,
-        });
-
         // 1순위: historyId로 들어온 경우
         // 핵심: 최신 진단 결과를 쓰면 안 됨. 해당 history의 diagnosisId로 저장된 LLM guide를 다시 조회해야 함.
         if (historyId) {
           const history = await fetchHistoryDetail(String(historyId));
-
-          console.log("📌 [DIY] history detail:", JSON.stringify(history, null, 2));
 
           const historyCategory = getCategoryFromHistory(history, issueType);
           const historyDiagnosisId = history.diagnosisId ?? history.diagnosisResult?.id;
@@ -341,14 +318,7 @@ export default function Diy() {
         setIsCallPro(false);
         setUsedDbProducts(dbProducts.length > 0);
       } catch (e: any) {
-        console.log("❌ [DIY] 가이드 조회 실패:", {
-          message: e?.message,
-          status: e?.response?.status,
-          data: e?.response?.data,
-          url: e?.config?.url,
-          params: e?.config?.params,
-        });
-
+        if (__DEV__) console.warn("[diy] 가이드 조회 실패", e?.response?.status);
         Alert.alert("불러오기 실패", "DIY 가이드를 불러오지 못했습니다.");
       } finally {
         setLoading(false);
@@ -520,9 +490,9 @@ export default function Diy() {
             {materials.length === 0 ? (
                 <View style={styles.emptyProductBox}>
                   <Feather name="package" size={30} color="#cbd5e1" />
-                  <Text style={styles.emptyProductTitle}>등록된 추천 물품이 없습니다.</Text>
+                  <Text style={styles.emptyProductTitle}>추천 물품이 아직 없어요.</Text>
                   <Text style={styles.emptyProductText}>
-                    관리자 물품관리에서 {selectedCategory} 카테고리 상품을 등록하면 이곳에 표시됩니다.
+                    이 하자 유형에 맞는 추천 물품이 준비되면 이곳에 표시됩니다.
                   </Text>
                 </View>
             ) : (

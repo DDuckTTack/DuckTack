@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -552,8 +552,8 @@ export default function ReportDetail() {
       nextDraft = applyReservationRepairInfoToDraft(nextDraft, historyData);
 
       setDraft(nextDraft);
-    } catch (e) {
-      console.log("데이터 로딩 실패:", e);
+    } catch (e: any) {
+      if (__DEV__) console.warn("[report] 데이터 로딩 실패", e?.response?.status);
       Alert.alert("오류", "데이터를 불러오는 중 문제가 발생했습니다.");
     } finally {
       setLoading(false);
@@ -616,10 +616,6 @@ export default function ReportDetail() {
     try {
       setSavingDraft(true);
 
-      console.log("reportId:", reportId);
-      console.log("history:", JSON.stringify(history, null, 2));
-      console.log("reportBase:", reportBase);
-
       if (!reportBase?.diagnosisId) {
         if (showSuccessMessage) {
           Alert.alert("저장 대기 중", "진단 기록을 불러오는 중입니다. 잠시 후 다시 저장해주세요.");
@@ -669,18 +665,7 @@ export default function ReportDetail() {
 
       return true;
     } catch (e: any) {
-      console.log("report draft save failed");
-
-      if (e.response) {
-        console.log("status:", e.response.status);
-        console.log("data:", JSON.stringify(e.response.data, null, 2));
-        console.log("url:", e.config?.url);
-        console.log("method:", e.config?.method);
-        console.log("body:", e.config?.data);
-      } else {
-        console.log("message:", e.message);
-      }
-
+      if (__DEV__) console.warn("[report] 수리 정보 저장 실패", e?.response?.status);
       Alert.alert("저장 실패", "수리 정보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
       return false;
     } finally {
@@ -732,8 +717,8 @@ export default function ReportDetail() {
 
       Alert.alert("PDF 생성 완료", "리포트 PDF가 생성되었습니다.\n이제 PDF를 열어 확인할 수 있습니다.");
       await load();
-    } catch (e) {
-      console.log("frontend pdf generate failed", e);
+    } catch (e: any) {
+      if (__DEV__) console.warn("[report] PDF 생성 실패", e?.response?.status ?? e?.message);
       Alert.alert("PDF 생성 실패", "PDF 파일 용량이 크거나 네트워크가 불안정해 저장하지 못했습니다. 사진 수를 줄인 뒤 다시 시도해주세요.");
     } finally {
       setGeneratingPdf(false);
@@ -756,17 +741,14 @@ export default function ReportDetail() {
       const url = await getPdfUrl(reportBase.diagnosisId);
       const fixedUrl = normalizeBackendFileUrl(url);
 
-      console.log("PDF original URL:", url);
-      console.log("PDF fixed URL:", fixedUrl);
-
       if (fixedUrl) {
         await Linking.openURL(fixedUrl);
         return;
       }
 
       Alert.alert("PDF 없음", "생성된 PDF URL이 없습니다. 먼저 PDF를 생성해주세요.");
-    } catch (e) {
-      console.log("PDF 열기 실패:", e);
+    } catch (e: any) {
+      if (__DEV__) console.warn("[report] PDF 열기 실패", e?.response?.status ?? e?.message);
       Alert.alert("PDF 열기 실패", "생성된 PDF를 불러오지 못했습니다. 먼저 PDF를 다시 생성해주세요.");
     }
   }
@@ -902,13 +884,13 @@ export default function ReportDetail() {
                 </View>
                 {diagnosisBeforeImageUris.length === 0 && draft.beforeImageUris.length === 0 ? (
                     <View style={styles.emptyImageBox}>
-                      <Text style={styles.emptyImageText}>진단 사진 URL이 아직 응답되지 않았습니다. 추가 사진은 직접 첨부할 수 있습니다.</Text>
+                      <Text style={styles.emptyImageText}>진단 사진을 불러오지 못했어요. 추가 사진은 직접 첨부할 수 있어요.</Text>
                     </View>
                 ) : (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.imageScrollContent}>
                       {diagnosisBeforeImageUris.map((uri, index) => (
                           <View key={`diagnosis-${uri}-${index}`} style={styles.imagePreviewCard}>
-                            <Image source={{ uri: normalizeBackendFileUrl(uri) }} style={styles.imagePreview} onError={(e) => console.log("리포트 이미지 로드 실패", uri, e.nativeEvent)} />
+                            <Image source={{ uri: normalizeBackendFileUrl(uri) }} style={styles.imagePreview} contentFit="cover" cachePolicy="memory-disk" transition={150} onError={() => { if (__DEV__) console.warn("[report] 이미지 로드 실패"); }} />
                             <View style={styles.autoImageBadge}>
                               <Text style={styles.autoImageBadgeText}>진단 사진</Text>
                             </View>
@@ -916,7 +898,7 @@ export default function ReportDetail() {
                       ))}
                       {draft.beforeImageUris.map((uri, index) => (
                           <View key={`before-extra-${uri}-${index}`} style={styles.imagePreviewCard}>
-                            <Image source={{ uri: normalizeBackendFileUrl(uri) }} style={styles.imagePreview} onError={(e) => console.log("리포트 이미지 로드 실패", uri, e.nativeEvent)} />
+                            <Image source={{ uri: normalizeBackendFileUrl(uri) }} style={styles.imagePreview} contentFit="cover" cachePolicy="memory-disk" transition={150} onError={() => { if (__DEV__) console.warn("[report] 이미지 로드 실패"); }} />
                             <Pressable style={styles.imageRemoveButton} onPress={() => removeImage("beforeImageUris", index)}>
                               <Ionicons name="close-circle" size={22} color="#ef4444" />
                             </Pressable>
@@ -940,7 +922,7 @@ export default function ReportDetail() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.imageScrollContent}>
                       {draft.afterImageUris.map((uri, index) => (
                           <View key={`${uri}-${index}`} style={styles.imagePreviewCard}>
-                            <Image source={{ uri: normalizeBackendFileUrl(uri) }} style={styles.imagePreview} onError={(e) => console.log("리포트 이미지 로드 실패", uri, e.nativeEvent)} />
+                            <Image source={{ uri: normalizeBackendFileUrl(uri) }} style={styles.imagePreview} contentFit="cover" cachePolicy="memory-disk" transition={150} onError={() => { if (__DEV__) console.warn("[report] 이미지 로드 실패"); }} />
                             <Pressable style={styles.imageRemoveButton} onPress={() => removeImage("afterImageUris", index)}>
                               <Ionicons name="close-circle" size={22} color="#ef4444" />
                             </Pressable>

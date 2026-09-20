@@ -4,6 +4,7 @@ import {
   Text,
   Pressable,
   ScrollView,
+  FlatList,
   Alert,
   StyleSheet,
   Platform,
@@ -11,8 +12,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, Stack } from "expo-router";
-import { useFocusEffect } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { Ionicons, Feather } from "@expo/vector-icons";
 
 import {
@@ -353,35 +353,30 @@ export default function Histories() {
           </ScrollView>
         </View>
 
-        <ScrollView
+        <FlatList
+            data={filteredItems}
+            keyExtractor={(it) => getHistoryId(it)}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
-        >
-          <View style={styles.listContainer}>
-            {loading && items.length === 0 ? (
-                <ActivityIndicator size="large" color={MAIN_BLUE} style={{ marginTop: 40 }} />
-            ) : filteredItems.length === 0 ? (
-                <View style={styles.emptyBox}>
-                  <Ionicons
-                      name="document-text-outline"
-                      size={48}
-                      color="#e2e8f0"
-                      style={{ marginBottom: 12 }}
-                  />
-                  <Text style={styles.emptyText}>해당하는 진단 기록이 없습니다.</Text>
-                </View>
-            ) : (
-                filteredItems.map((it) => {
-                  console.log("history review debug", {
-                    id: getHistoryId(it),
-                    reportStatus: reportStatus[getHistoryId(it)],
-                    reservationId: (it as any).reservationId,
-                    reservationStatus: (it as any).reservationStatus,
-                    companyId: (it as any).companyId,
-                    kakaoPlaceId: (it as any).kakaoPlaceId,
-                    expertVendorName: (it as any).expertVendorName,
-                    reviewWritten: (it as any).reviewWritten,
-                  });
+            contentContainerStyle={[styles.listContainer, { paddingBottom: 100 }]}
+            initialNumToRender={8}
+            windowSize={7}
+            removeClippedSubviews
+            ListEmptyComponent={
+              loading && items.length === 0 ? (
+                  <ActivityIndicator size="large" color={MAIN_BLUE} style={{ marginTop: 40 }} />
+              ) : (
+                  <View style={styles.emptyBox}>
+                    <Ionicons
+                        name="document-text-outline"
+                        size={48}
+                        color="#e2e8f0"
+                        style={{ marginBottom: 12 }}
+                    />
+                    <Text style={styles.emptyText}>해당하는 진단 기록이 없습니다.</Text>
+                  </View>
+              )
+            }
+            renderItem={({ item: it }) => {
                   const id = getHistoryId(it);
                   const iconData = getIssueIcon(it.issueType);
                   const isHighRisk = it.riskScore > 70;
@@ -392,7 +387,7 @@ export default function Histories() {
                   const historyStatusColor = getHistoryStatusColor(it);
 
                   return (
-                      <View key={id} style={styles.historyCard}>
+                      <View style={styles.historyCard}>
                         <Pressable
                             style={styles.cardMain}
                             onPress={() =>
@@ -508,10 +503,8 @@ export default function Histories() {
                         )}
                       </View>
                   );
-                })
-            )}
-          </View>
-        </ScrollView>
+            }}
+        />
       </SafeAreaView>
   );
 }

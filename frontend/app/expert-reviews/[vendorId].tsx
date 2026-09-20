@@ -121,7 +121,7 @@ export default function ExpertReviews() {
       setStats(reviewData);
       setMe(meData);
     } catch (e) {
-      console.log("리뷰 조회 실패:", e);
+      if (__DEV__) console.warn("[reviews] 조회 실패", (e as any)?.response?.status);
       setStats({ avgRating: 0, reviewCount: 0, reviews: [] });
       setMe(null);
     } finally {
@@ -130,7 +130,6 @@ export default function ExpertReviews() {
   }
 
   useEffect(() => {
-    console.log("review screen params", { vendorId, vendorName, companyId, companyName, kakaoPlaceId, kakaoPlaceName, historyId, displayVendorName });
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, kakaoPlaceId, historyId]);
@@ -152,7 +151,7 @@ export default function ExpertReviews() {
             if (String(editingId) === String(reviewId)) resetForm();
             await load();
           } catch (e: any) {
-            console.log("리뷰 삭제 실패:", { status: e?.response?.status, data: e?.response?.data, message: e?.message });
+            if (__DEV__) console.warn("[reviews] 삭제 실패", e?.response?.status);
             Alert.alert("삭제 실패", e?.response?.data?.message || "리뷰를 삭제하지 못했습니다.");
           } finally {
             setDeletingId(null);
@@ -187,7 +186,7 @@ export default function ExpertReviews() {
       resetForm();
       await load();
     } catch (e: any) {
-      console.log(editingId ? "리뷰 수정 실패:" : "리뷰 등록 실패:", { status: e?.response?.status, data: e?.response?.data, message: e?.message });
+      if (__DEV__) console.warn(editingId ? "[reviews] 수정 실패" : "[reviews] 등록 실패", e?.response?.status);
       Alert.alert(editingId ? "수정 실패" : "등록 실패", e?.response?.data?.message || "다시 시도해주세요.");
     } finally {
       setSubmitting(false);
