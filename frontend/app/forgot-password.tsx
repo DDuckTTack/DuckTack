@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
       setCodeVerified(false);
       Alert.alert("인증코드 발송", "비밀번호 재설정용 인증코드를 이메일로 보냈습니다.");
     } catch {
-      Alert.alert("발송 실패", "비밀번호 재설정용 이메일 발송 API를 확인해주세요.");
+      Alert.alert("발송 실패", "인증코드를 보내지 못했어요. 이메일 주소를 확인해 주세요.");
     } finally {
       setSendingCode(false);
     }
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
       setCodeVerified(verified);
       Alert.alert("인증 확인", verified ? "인증이 완료되었습니다." : "인증코드를 다시 확인해주세요.");
     } catch {
-      Alert.alert("인증 실패", "비밀번호 재설정 코드 확인 API를 확인해주세요.");
+      Alert.alert("인증 실패", "인증코드가 올바르지 않거나 만료되었어요.");
     } finally {
       setVerifyingCode(false);
     }
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
       Alert.alert("재설정 완료", "비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.");
       router.replace("/login");
     } catch {
-      Alert.alert("재설정 실패", "비밀번호 재설정 API를 확인해주세요.");
+      Alert.alert("재설정 실패", "비밀번호를 재설정하지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
       setResetting(false);
     }
