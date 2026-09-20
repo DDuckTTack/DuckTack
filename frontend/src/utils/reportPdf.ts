@@ -1,8 +1,13 @@
 import * as Print from "expo-print";
 import * as FileSystem from "expo-file-system/legacy";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 import { apiClient } from "../api/apiClient";
 import { buildReportPdfHtml, type ReportPdfTemplateInput } from "./reportPdfTemplate";
+
+// PDF에 넣는 사진의 최대 가로 크기(px). 원본을 그대로 base64로 넣으면
+// PDF 용량이 커져 생성이 실패하므로 이 크기로 줄여서 삽입한다.
+const PDF_IMAGE_MAX_WIDTH = 1000;
 
 export type CreatedReportPdf = {
   uri: string;
@@ -84,16 +89,44 @@ function normalizeRemoteImageUrl(uri: string): string {
   return raw;
 }
 
-async function localImageToBase64(uri: string): Promise<string> {
+/**
+ * 로컬 파일(file://)을 PDF_IMAGE_MAX_WIDTH로 줄이고 JPEG로 압축한 뒤
+ * data URI(base64)로 변환한다. 변환 실패 시 원본을 그대로 읽는다.
+ */
+async function downscaledDataUri(localUri: string): Promise<string> {
+  try {
+    const context = ImageManipulator.manipulate(localUri).resize({
+      width: PDF_IMAGE_MAX_WIDTH,
+    });
+    const image = await withTimeout(
+        context.renderAsync(),
+        12000,
+        "이미지 축소 시간이 초과되었습니다."
+    );
+    const result = await image.saveAsync({
+      compress: 0.6,
+      format: SaveFormat.JPEG,
+      base64: true,
+    });
+    if (result.base64) {
+      return `data:image/jpeg;base64,${result.base64}`;
+    }
+  } catch {
+    if (__DEV__) console.warn("[reportPdf] 이미지 축소 실패, 원본 사용");
+  }
+
   const base64 = await withTimeout(
-      FileSystem.readAsStringAsync(uri, {
+      FileSystem.readAsStringAsync(localUri, {
         encoding: FileSystem.EncodingType.Base64,
       }),
       12000,
       "로컬 이미지 변환 시간이 초과되었습니다."
   );
+  return `data:${guessMimeType(localUri)};base64,${base64}`;
+}
 
-  return `data:${guessMimeType(uri)};base64,${base64}`;
+async function localImageToBase64(uri: string): Promise<string> {
+  return downscaledDataUri(uri);
 }
 
 async function remoteImageToBase64(uri: string): Promise<string> {
@@ -104,7 +137,7 @@ async function remoteImageToBase64(uri: string): Promise<string> {
   // HEIC는 웹/PDF 렌더링에서 깨질 가능성이 높아서 PDF에는 제외
   const lower = normalizedUri.toLowerCase();
   if (lower.includes(".heic") || lower.includes(".heif")) {
-    console.warn("PDF HEIC 이미지는 제외됨:", normalizedUri);
+    if (__DEV__) console.warn("[reportPdf] HEIC 이미지 제외됨");
     return "";
   }
 
@@ -127,15 +160,7 @@ async function remoteImageToBase64(uri: string): Promise<string> {
     throw new Error(`이미지 다운로드 실패: ${downloadResult.status}`);
   }
 
-  const base64 = await withTimeout(
-      FileSystem.readAsStringAsync(downloadResult.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      }),
-      12000,
-      "원격 이미지 변환 시간이 초과되었습니다."
-  );
-
-  return `data:${guessMimeType(normalizedUri)};base64,${base64}`;
+  return downscaledDataUri(downloadResult.uri);
 }
 
 async function toPrintableImageSrc(uri: string): Promise<string> {
@@ -167,8 +192,8 @@ async function prepareImages(uris: string[]): Promise<string[]> {
       if (converted) {
         result.push(converted);
       }
-    } catch (error) {
-      console.warn("PDF 이미지 변환 실패:", uri, error);
+    } catch {
+      if (__DEV__) console.warn("[reportPdf] 이미지 변환 실패");
       // 이미지 하나 실패했다고 PDF 전체 생성이 멈추면 안 됨
     }
   }

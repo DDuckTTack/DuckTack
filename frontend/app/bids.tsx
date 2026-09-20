@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
-import {ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from "react-native";
+import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from "react-native";
+import {Image} from "expo-image";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {Stack, router, useLocalSearchParams} from "expo-router";
 import {Feather} from "@expo/vector-icons";
@@ -183,7 +184,7 @@ export default function BidsPage() {
       {!request ? <>
         <Text style={s.title}>원하는 시간 동안{"\n"}여러 업체의 가격을 받아보세요</Text>
         <Text style={s.sub}>진단 사진과 결과가 업체에 함께 전달됩니다.</Text>
-        {p.imageUrl ? <Image source={{uri:String(p.imageUrl)}} style={s.hero}/> : <View style={s.noImage}><Text style={s.noImageText}>진단 사진이 함께 전송됩니다.</Text></View>}
+        {p.imageUrl ? <Image source={{uri:String(p.imageUrl)}} style={s.hero} contentFit="cover" cachePolicy="memory-disk" transition={150}/> : <View style={s.noImage}><Text style={s.noImageText}>진단 사진이 함께 전송됩니다.</Text></View>}
         <Text style={s.label}>입찰 받을 시간</Text>
         <View style={s.chips}>{durations.map(v => <Pressable key={v.minutes} onPress={() => setMinutes(v.minutes)}
           style={[s.chip, minutes === v.minutes && s.chipOn]}><Text style={[s.chipText, minutes === v.minutes && s.chipTextOn]}>{v.label}</Text></Pressable>)}</View>
@@ -206,7 +207,7 @@ export default function BidsPage() {
       </> : <>
         <View style={s.status}><View><Text style={s.statusLabel}>입찰 현황</Text><Text style={s.statusTitle}>{offers.length}개 업체가 참여했어요</Text></View>
           <Text style={s.time}>{left(request.deadline)}</Text></View>
-        {request.imageUrl ? <Image source={{uri:request.imageUrl}} style={s.hero}/> : null}
+        {request.imageUrl ? <Image source={{uri:request.imageUrl}} style={s.hero} contentFit="cover" cachePolicy="memory-disk" transition={150}/> : null}
         <Text style={s.guide}>{request.status === "OPEN" ? "업체명, 거리, 가격을 비교해보세요. 5초마다 자동 갱신됩니다." : "입찰이 종료되었습니다."}</Text>
         {request.status === "OPEN" && <View style={s.actionsRow}>
           <Pressable style={[s.pillButton, extendPickerOpen && s.pillButtonActive]} disabled={mutating}

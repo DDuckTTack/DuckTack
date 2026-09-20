@@ -3,23 +3,19 @@ import {
   View,
   Text,
   Pressable,
-  Image,
   ScrollView,
   StyleSheet,
   Alert,
-  Platform,
   TouchableOpacity,
-  Linking
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { router, Stack } from "expo-router";
-import { useFocusEffect } from "expo-router";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-// [원본 상대 경로 및 API 로직 100% 유지]
 import { showAlert } from "../src/utils/showAlert";
-import api from "../src/api/apiClient";
 import { setPendingImages } from "../src/api/diagnosis";
 
 type PickedImage = {
@@ -27,8 +23,35 @@ type PickedImage = {
 };
 
 const MAX_IMAGES = 5;
+const MAX_UPLOAD_WIDTH = 1600;
 const MAIN_BLUE = "#4F46E5";
 const BG_BLUE = "#EDEDFF";
+
+/**
+ * 업로드 전에 사진을 적당한 크기로 줄이고 압축한다.
+ * - 가로가 1600px보다 크면 1600px로 축소(작으면 원본 유지)
+ * - JPEG 품질 60%로 재인코딩 → 업로드 용량/시간 감소
+ * 실패하면 원본 URI를 그대로 사용한다.
+ */
+async function prepareForUpload(asset: ImagePicker.ImagePickerAsset): Promise<string> {
+  try {
+    const context = ImageManipulator.manipulate(asset.uri);
+    if ((asset.width ?? 0) > MAX_UPLOAD_WIDTH) {
+      context.resize({ width: MAX_UPLOAD_WIDTH });
+    }
+    const image = await context.renderAsync();
+    const result = await image.saveAsync({ compress: 0.6, format: SaveFormat.JPEG });
+    return result.uri;
+  } catch {
+    if (__DEV__) console.warn("[upload] 이미지 준비 실패, 원본 사용");
+    return asset.uri;
+  }
+}
+
+async function toPickedImages(assets: ImagePicker.ImagePickerAsset[]): Promise<PickedImage[]> {
+  const uris = await Promise.all(assets.map(prepareForUpload));
+  return uris.filter(Boolean).map((uri) => ({ uri }));
+}
 
 export default function Upload() {
   const [images, setImages] = useState<PickedImage[]>([]);
@@ -96,7 +119,7 @@ export default function Upload() {
 
                 if (result.canceled) return;
 
-                const picked = result.assets.map((a) => ({ uri: a.uri }));
+                const picked = await toPickedImages(result.assets);
                 setImages((prev) => [...prev, ...picked].slice(0, MAX_IMAGES));
               },
             },
@@ -115,7 +138,7 @@ export default function Upload() {
 
     if (result.canceled) return;
 
-    const picked = result.assets.map((a) => ({ uri: a.uri }));
+    const picked = await toPickedImages(result.assets);
     setImages((prev) => [...prev, ...picked].slice(0, MAX_IMAGES));
   }
 
@@ -159,9 +182,10 @@ export default function Upload() {
 
                 if (result.canceled) return;
 
-                const uri = result.assets[0]?.uri;
-                if (!uri) return;
+                const asset = result.assets[0];
+                if (!asset) return;
 
+                const uri = await prepareForUpload(asset);
                 setImages((prev) => [...prev, { uri }].slice(0, MAX_IMAGES));
               },
             },
@@ -175,9 +199,10 @@ export default function Upload() {
 
     if (result.canceled) return;
 
-    const uri = result.assets[0]?.uri;
-    if (!uri) return;
+    const asset = result.assets[0];
+    if (!asset) return;
 
+    const uri = await prepareForUpload(asset);
     setImages((prev) => [...prev, { uri }].slice(0, MAX_IMAGES));
   }
 
@@ -196,8 +221,8 @@ export default function Upload() {
       await setPendingImages(uris);
 
       router.push("/analyzing");
-    } catch (e) {
-      console.error("[upload] pending image save failed", e);
+    } catch {
+      if (__DEV__) console.warn("[upload] 이미지 임시 저장 실패");
       showAlert("진단 준비 실패", "사진 정보를 저장하지 못했습니다. 다시 시도해주세요.");
     } finally {
       // router.push 후에도 탭 화면 state가 남을 수 있어서 반드시 해제한다.
@@ -271,7 +296,7 @@ export default function Upload() {
                   )}
                   {images.map((img) => (
                       <View key={img.uri} style={styles.previewSquare}>
-                        <Image source={{ uri: img.uri }} style={styles.squareImage} />
+                        <ExpoImage source={{ uri: img.uri }} style={styles.squareImage} contentFit="cover" />
                         <TouchableOpacity onPress={() => removeImage(img.uri)} style={styles.deleteMiniBadge}>
                           <Ionicons name="close" size={14} color="white" />
                         </TouchableOpacity>
