@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View, Text, Pressable, Alert, StyleSheet, Linking } from "react-native";
-import { router, useLocalSearchParams, Stack } from "expo-router";
+import { router, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
 import { Feather, MaterialCommunityIcons, FontAwesome } from "@expo/vector-icons";
 
 import ScreenState from "../src/components/ScreenState";
@@ -126,7 +125,7 @@ async function messageVendor(vendor: ExpertVendor) {
     const conversation = await getOrCreateConversation({ targetCompanyId: vendor.companyId });
     router.push(`/messages/${conversation.conversationId}`);
   } catch (e: any) {
-    console.log("업체 쪽지 생성 실패:", e);
+    if (__DEV__) console.warn("[expert] 업체 쪽지 생성 실패", e?.response?.status);
     Alert.alert("쪽지 보내기 실패", e?.response?.data?.message || "다시 시도해주세요.");
   }
 }
@@ -298,46 +297,10 @@ export default function Expert() {
     userCoordinatesRef.current = userCoordinates;
   }, [userCoordinates]);
 
-  async function findNearestRegionFromVendors(coords: Coordinates): Promise<VendorRegion> {
-    const issueKeyword = issueTypeSearchKeyword(resolvedIssueType);
-
-    const results = await Promise.allSettled(
-        VENDOR_REGIONS.map(async (region): Promise<{ region: VendorRegion; nearestDistance: number }> => {
-          const typedRegion = region as VendorRegion;
-          const regionCoords = REGION_COORDS[typedRegion];
-
-          const regionVendors = await listNearbyCompanies({
-            latitude: regionCoords.latitude,
-            longitude: regionCoords.longitude,
-            region,
-            keyword: `${region} ${issueKeyword}`.trim(),
-          });
-
-          const withDistance = withDistanceFromUser(regionVendors, coords).filter(
-              (vendor) => vendor.distanceKm != null && Number.isFinite(vendor.distanceKm),
-          );
-
-          const nearestDistance =
-              withDistance.length > 0
-                  ? Math.min(...withDistance.map((vendor) => vendor.distanceKm ?? Number.POSITIVE_INFINITY))
-                  : Number.POSITIVE_INFINITY;
-
-          return { region: typedRegion, nearestDistance };
-        }),
-    );
-
-    type RegionCandidate = { region: VendorRegion; nearestDistance: number };
-
-    const candidates = results
-        .filter((result): result is PromiseFulfilledResult<RegionCandidate> => result.status === "fulfilled")
-        .map((result) => result.value)
-        .filter((item) => Number.isFinite(item.nearestDistance))
-        .sort((a, b) => a.nearestDistance - b.nearestDistance);
-
-    if (candidates.length > 0) {
-      return candidates[0].region;
-    }
-
+  // 사용자 좌표와 각 지역 중심점 사이의 거리로 가장 가까운 지역을 고른다.
+  // (이전에는 8개 지역에 각각 업체 조회 요청을 보냈지만, 지역 탭 선택에는
+  //  중심점 거리만으로 충분하고 화면 진입 시 네트워크 요청이 8회 줄어든다.)
+  function findNearestRegion(coords: Coordinates): VendorRegion {
     return (Object.entries(REGION_COORDS) as [VendorRegion, Coordinates][])
         .map(([region, center]) => ({
           region,
@@ -355,7 +318,7 @@ export default function Expert() {
       setUserCoordinates(coords);
       setLocationSortEnabled(true);
 
-      const nextRegion = selectedRegion ?? (await findNearestRegionFromVendors(coords));
+      const nextRegion = selectedRegion ?? findNearestRegion(coords);
       setSelectedRegion(nextRegion);
       setSortKey("distance");
       setSortAscending(true);
@@ -414,7 +377,7 @@ export default function Expert() {
                 return;
               }
             } catch (err) {
-              console.log("지역 중심 업체 조회 실패. 제휴업체 API로 fallback:", err);
+              if (__DEV__) console.warn("[expert] 지역 업체 조회 실패 → 제휴업체로 대체", (err as any)?.response?.status);
             }
           }
 
@@ -436,7 +399,7 @@ export default function Expert() {
           }
         } catch {
           setVendors([]);
-          Alert.alert("조회 실패", "전문업체 API 정보를 확인해주세요.");
+          Alert.alert("조회 실패", "업체 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
         } finally {
           setVendorsLoading(false);
         }
@@ -458,7 +421,7 @@ export default function Expert() {
         setUserCoordinates(coords);
         setLocationSortEnabled(true);
 
-        const nearestRegion = await findNearestRegionFromVendors(coords);
+        const nearestRegion = findNearestRegion(coords);
         setSelectedRegion(nearestRegion);
         setSortKey("distance");
         setSortAscending(true);

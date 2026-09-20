@@ -1,5 +1,5 @@
 import {useCallback, useMemo, useState} from "react";
-import {ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View} from "react-native";
+import {ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View} from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {Stack, router, useFocusEffect} from "expo-router";
 import {Feather, Ionicons} from "@expo/vector-icons";
@@ -46,7 +46,7 @@ export default function BidListPage() {
   const filtered = useMemo(() => items.filter((item) =>
     filter === "ALL" || (filter === "OPEN" ? item.status === "OPEN" : item.status !== "OPEN")
   ), [items,filter]);
-  const activeCount = items.filter((item) => item.status === "OPEN").length;
+  const activeCount = useMemo(() => items.filter((item) => item.status === "OPEN").length, [items]);
 
   return <SafeAreaView style={s.safe} edges={["top","left","right"]}>
     <Stack.Screen options={{headerShown:false}}/>
@@ -60,12 +60,21 @@ export default function BidListPage() {
         <Text style={[s.filterText,filter === value && s.filterTextOn]}>{label}</Text></Pressable>)}</View>
 
     {loading ? <View style={s.center}><ActivityIndicator color={BLUE}/></View> :
-      <ScrollView contentContainerStyle={s.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)}/>}>
-        {filtered.length === 0 ? <View style={s.empty}><Ionicons name="pricetags-outline" size={40} color="#CBD5E1"/>
-          <Text style={s.emptyTitle}>입찰 내역이 없습니다</Text><Text style={s.emptySub}>진단 결과에서 여러 업체에 입찰을 요청해보세요.</Text></View> :
-          filtered.map((item) => {
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={s.content}
+        initialNumToRender={8}
+        windowSize={7}
+        removeClippedSubviews
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)}/>}
+        ListEmptyComponent={
+          <View style={s.empty}><Ionicons name="pricetags-outline" size={40} color="#CBD5E1"/>
+            <Text style={s.emptyTitle}>입찰 내역이 없습니다</Text><Text style={s.emptySub}>진단 결과에서 여러 업체에 입찰을 요청해보세요.</Text></View>
+        }
+        renderItem={({item}) => {
             const status = statusInfo(item.status);
-            return <Pressable key={item.id} style={s.card} onPress={() => router.push({pathname:"/bids" as any,params:{bidRequestId:String(item.id)}})}>
+            return <Pressable style={s.card} onPress={() => router.push({pathname:"/bids" as any,params:{bidRequestId:String(item.id)}})}>
               <View style={s.cardTop}><View style={{...s.status,borderColor:status.bg,backgroundColor:status.bg}}>
                 <Ionicons name={status.icon as any} size={15} color={status.color}/><Text style={{...s.statusText,color:status.color}}>{status.label}</Text></View>
                 {item.status === "OPEN" && <Text style={s.deadline}>{left(item.deadline)}</Text>}</View>
@@ -76,8 +85,8 @@ export default function BidListPage() {
                 <Text style={s.date}>{formatDate(item.createdAt)} 요청</Text></View>
                 <View style={s.detail}><Text style={s.detailText}>상세보기</Text><Feather name="chevron-right" size={18} color={BLUE}/></View></View>
             </Pressable>;
-          })}
-      </ScrollView>}
+          }}
+      />}
   </SafeAreaView>;
 }
 
