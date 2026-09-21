@@ -20,6 +20,8 @@ dist/
 # Env / Secrets
 .env
 .env.*
+!*.env.example
+!.env.example
 
 # Storage (runtime upload/report output only, e.g. backend/storage/uploads,
 # backend/storage/reports — anchored so it doesn't also match the

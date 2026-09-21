@@ -1,0 +1,28 @@
+# 도메인을 실제 값으로 바꾸고 `docker compose up -d caddy` 로 반영한다.
+# Caddy 가 Let's Encrypt 인증서를 자동 발급/갱신한다 (80 포트로 검증하므로 80 도 열려 있어야 함).
+ducktack.example.com {
+	# 백엔드 REST API
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# 업로드된 사진 / 리포트 PDF
+	handle /storage/* {
+		reverse_proxy backend:8080
+	}
+
+	# STOMP WebSocket (실시간 채팅/알림). 이게 없으면 채팅만 조용히 죽는다.
+	handle /ws* {
+		reverse_proxy backend:8080
+	}
+
+	# 나머지는 company-web 정적 파일.
+	# company-web/build 가 비어 있으면 404 가 뜬다 → `npm run build` 를 먼저 돌릴 것.
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+	}
+
+	encode gzip
+}

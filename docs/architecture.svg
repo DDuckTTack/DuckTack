@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="512" viewBox="0 0 680 512" role="img">
+<title>DuckTack 시스템 구조도</title>
+<desc>모바일 앱과 관리자·제휴업체 웹이 Spring Boot 백엔드에 연결되고, 백엔드가 주요 서비스를 통해 PostgreSQL에 저장하며 업로드 이미지와 PDF 리포트는 파일 저장소에, 하자 탐지와 DIY 가이드 생성은 외부 Gemini API 호출로 처리된다.</desc>
+
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<rect x="0" y="0" width="680" height="512" fill="#FFFFFF"/>
+
+<!-- 클라이언트 -->
+<rect x="40" y="40" width="186" height="58" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="133" y="66" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="500" fill="#444441">모바일 앱</text>
+<text x="133" y="84" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#5F5E5A">React Native + Expo</text>
+
+<rect x="247" y="40" width="186" height="58" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="340" y="66" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="500" fill="#444441">관리자 웹</text>
+<text x="340" y="84" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#5F5E5A">React</text>
+
+<rect x="454" y="40" width="186" height="58" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="547" y="66" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="500" fill="#444441">제휴업체 웹</text>
+<text x="547" y="84" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#5F5E5A">React</text>
+
+<path d="M133 98 L133 122 L280 122 L280 140" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 98 L340 140" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M547 98 L547 122 L400 122 L400 140" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<!-- 백엔드 + 좌우 -->
+<rect x="40" y="140" width="160" height="58" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="120" y="166" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="500" fill="#444441">파일 저장소</text>
+<text x="120" y="184" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#5F5E5A">이미지 · PDF 리포트</text>
+
+<rect x="220" y="140" width="240" height="58" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text x="340" y="166" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="500" fill="#3C3489">Spring Boot 백엔드</text>
+<text x="340" y="184" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#534AB7">REST API · WebSocket</text>
+
+<rect x="480" y="140" width="160" height="58" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="560" y="166" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="500" fill="#444441">인증 · 보안</text>
+<text x="560" y="184" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#5F5E5A">JWT · SMTP</text>
+
+<path d="M220 169 L202 169" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M460 169 L478 169" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 198 L340 225" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<!-- 주요 서비스 -->
+<rect x="137" y="225" width="406" height="110" rx="8" fill="none" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="4 3"/>
+<text x="340" y="245" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#5F5E5A">주요 서비스</text>
+
+<rect x="149" y="256" width="120" height="32" rx="4" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="209" y="276" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#2C2C2A">사용자 관리</text>
+<rect x="280" y="256" width="120" height="32" rx="4" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="340" y="276" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#2C2C2A">하자 진단</text>
+<rect x="411" y="256" width="120" height="32" rx="4" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="471" y="276" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#2C2C2A">업체 관리</text>
+<rect x="149" y="294" width="120" height="32" rx="4" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="209" y="314" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#2C2C2A">예약 관리</text>
+<rect x="280" y="294" width="120" height="32" rx="4" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="340" y="314" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#2C2C2A">리포트</text>
+<rect x="411" y="294" width="120" height="32" rx="4" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="471" y="314" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#2C2C2A">수리 이력</text>
+
+<path d="M209 335 L209 380" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M471 335 L471 380" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<!-- 저장소 / AI -->
+<rect x="99" y="380" width="220" height="54" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="209" y="404" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" font-weight="500" fill="#444441">PostgreSQL</text>
+<text x="209" y="422" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#5F5E5A">데이터 · 파일 경로</text>
+
+<rect x="351" y="380" width="240" height="108" rx="8" fill="none" stroke="#1D9E75" stroke-width="0.5" stroke-dasharray="4 3"/>
+<text x="471" y="400" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="12" fill="#0F6E56">Gemini API · 외부 호출</text>
+
+<rect x="363" y="410" width="216" height="34" rx="4" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="471" y="431" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#085041">하자 탐지 · 면적 산출</text>
+<rect x="363" y="450" width="216" height="34" rx="4" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="471" y="471" text-anchor="middle" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif" font-size="14" fill="#085041">DIY 가이드 생성</text>
+</svg>

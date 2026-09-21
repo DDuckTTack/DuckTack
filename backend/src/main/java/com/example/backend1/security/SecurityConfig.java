@@ -44,7 +44,6 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/storage/**",
                                 "/api/files/**",
-                                "/api/dev/**",
                                 "/ws/**",
                                 "/api/products/**",
                                 "/api/company/auth/**"
@@ -56,6 +55,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // 외부 API 상태 점검용 진단 엔드포인트. 토큰 없이 열어두면
+                        // 누구나 카카오/네이버 할당량을 태울 수 있어 ADMIN 전용으로 제한한다.
+                        .requestMatchers("/api/dev/**").hasRole("ADMIN")
                         .requestMatchers("/api/auth/password/**").permitAll()
                         .anyRequest().authenticated()
                 )
