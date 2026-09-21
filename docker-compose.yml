@@ -1,50 +1,45 @@
+# 운영 배포용 compose.
+#   - 시크릿은 backend/.env 에서 읽는다 (git 추적 제외, VM 에서 직접 생성).
+#   - environment: 에 적은 값은 env_file 을 덮어쓰므로, 시크릿은 여기에 적지 말 것.
+#   - 외부에 노출되는 포트는 Caddy 의 80/443 뿐이다.
 services:
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: apppass
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: ${DB_NAME:-appdb}
+      POSTGRES_USER: ${DB_USERNAME:-appuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 를 backend/.env 에 설정하세요}
+    # 포트를 호스트로 열지 않는다. 같은 compose 네트워크의 backend 만 접근하면 된다.
+    # 로컬에서 DB 에 직접 붙어야 하면 아래 주석을 잠깐 풀어서 쓸 것.
+    # ports:
+    #   - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-appuser} -d ${DB_NAME:-appdb}"]
       interval: 5s
       timeout: 3s
       retries: 20
 
   backend:
     build:
-      context: ./Backend
+      context: ./backend
+    restart: unless-stopped
+    # 시크릿 / 도메인 의존 값은 전부 이 파일에서 온다.
+    env_file:
+      - ./backend/.env
     environment:
-      SPRING_PROFILES_ACTIVE: local
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/appdb
-      SPRING_DATASOURCE_USERNAME: appuser
-      SPRING_DATASOURCE_PASSWORD: apppass
-      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_TO_LONG_RANDOM_SECRET_CHANGE_ME}
-      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-30}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
-      UPLOAD_MAX_FILES: ${UPLOAD_MAX_FILES:-5}
-      UPLOAD_MAX_FILE_SIZE: ${UPLOAD_MAX_FILE_SIZE:-10MB}
-      UPLOAD_MAX_REQUEST_SIZE: ${UPLOAD_MAX_REQUEST_SIZE:-30MB}
-      AI_RETRY_MAX_ATTEMPTS: ${AI_RETRY_MAX_ATTEMPTS:-3}
-      AI_RETRY_DELAY_MS: ${AI_RETRY_DELAY_MS:-300}
-      AI_RETRY_MULTIPLIER: ${AI_RETRY_MULTIPLIER:-2.0}
+      # 컨테이너 안에서만 의미 있는 값들 (시크릿 아님).
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-appdb}
       STORAGE_LOCAL_ROOT: /data/storage
-      STORAGE_PUBLIC_BASE_URL: http://192.168.1.103:8080
-      AI_BASE_URL: http://ai-server:5000
-      YOLO_BASE_URL: http://ai-server:5000
       MODERATION_BASE_URL: http://moderation-server:5000
-      MODERATION_ENABLED: ${MODERATION_ENABLED:-true}
-      MODERATION_FAIL_OPEN: ${MODERATION_FAIL_OPEN:-true}
-      LLM_API_KEY: ${LLM_API_KEY}
-      LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
-      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-8192}
-    ports:
-      - "8080:8080"
+    # Caddy 가 앞단에서 받으므로 호스트 포트를 열지 않는다.
+    # 디버깅이 필요하면 "127.0.0.1:8080:8080" 으로 로컬에서만 열 것.
+    expose:
+      - "8080"
     volumes:
+      # 업로드된 사진/리포트. 이게 없으면 재배포마다 사라진다.
       - backend_storage:/data/storage
     depends_on:
       db:
@@ -52,24 +47,38 @@ services:
       moderation-server:
         condition: service_started
 
-  ai-server:
-    build:
-      context: ./ai-server
-    ports:
-      - "5001:5000"
-    volumes:
-      - ./ai-server/sam_vit_b.pth:/app/sam_vit_b.pth
-
+  # 커뮤니티 욕설 필터. torch 를 설치해서 이미지 빌드가 오래 걸리고 RAM 을 많이 쓴다.
+  # 메모리가 부족하거나 ARM VM 이라 빌드가 안 되면:
+  #   1) 이 서비스와 backend 의 depends_on 항목을 주석 처리하고
+  #   2) backend/.env 에 MODERATION_ENABLED=false 를 넣으면 된다 (fail-open 이라 정상 동작).
   moderation-server:
     build:
       context: ./moderation-server
-    ports:
-      - "5002:5000"
+    restart: unless-stopped
+    expose:
+      - "5000"
     environment:
       MODERATION_MODEL_NAME: ${MODERATION_MODEL_NAME:-jinkyeongk/kcELECTRA-toxic-detector}
       MODERATION_THRESHOLD: ${MODERATION_THRESHOLD:-0.85}
       MODERATION_TOXIC_LABEL_ID: ${MODERATION_TOXIC_LABEL_ID:-1}
 
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./company-web/build:/srv/web:ro
+      # 발급받은 인증서 보관. 빼먹으면 재시작마다 재발급하다 Let's Encrypt 한도에 걸린다.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
   backend_storage:
+  caddy_data:
+  caddy_config:

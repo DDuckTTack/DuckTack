@@ -7,10 +7,15 @@ server:
     max-http-form-post-size: 120MB
 
 spring:
+  # 로컬 개발용 설정은 backend/.env 에서 읽는다 (git 추적 제외).
+  # 파일이 없으면 무시되고, 배포 환경에서는 실제 환경변수가 우선 적용된다.
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
-    url: jdbc:postgresql://localhost:5433/appdb
-    username: appuser
-    password: apppass
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/appdb}
+    username: ${DB_USERNAME:appuser}
+    password: ${DB_PASSWORD:apppass}
     hikari:
       maximum-pool-size: 10
 
@@ -21,9 +26,9 @@ spring:
       max-request-size: 120MB
 
   mail:
-    host: smtp-relay.brevo.com
-    port: 587
-    username: ${SMTP_USERNAME:a57cd0001@smtp-brevo.com}
+    host: ${SMTP_HOST:smtp-relay.brevo.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
     properties:
       mail:
@@ -34,7 +39,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      # 최초 배포 때는 update 로 스키마를 만들고, 그 뒤엔 JPA_DDL_AUTO=validate 로 고정할 것.
+      ddl-auto: ${JPA_DDL_AUTO:update}
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
@@ -49,20 +55,23 @@ spring:
 app:
   jwt:
     issuer: backend1-core
-    secret: duckttack-secret-duckttack-secret-duckttack-secret-123456
+    # 기본값 없음 — 미주입 시 기동 실패한다(운영에서 약한 시크릿으로 뜨는 사고 방지).
+    #   생성: openssl rand -base64 48
+    secret: ${JWT_SECRET}
     access-token-minutes: 120
 
   email:
-    from: limseeun566@gmail.com
+    from: ${MAIL_FROM:limseeun566@gmail.com}
     verification:
       ttl-minutes: 10
 
   cors:
-    allowed-origins: "*"
+    # 운영에서는 실제 도메인만. "*" 로 두지 말 것.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
 
   refresh:
     days: 30
-    pepper: duckpepper
+    pepper: ${REFRESH_PEPPER}
 
 upload:
   max-files: 5
@@ -75,10 +84,10 @@ springdoc:
 
 logging:
   level:
-    org.hibernate.SQL: debug
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:debug}
 
 ai:
-  base-url: https://frostily-sworn-shifting.ngrok-free.dev
+  base-url: ${AI_BASE_URL:https://frostily-sworn-shifting.ngrok-free.dev}
   retry:
     max-attempts: 3
     delay-ms: 300
@@ -103,7 +112,7 @@ moderation:
 #
 #    [현재 기본값: Google Gemini 무료 티어]
 #      base-url : https://generativelanguage.googleapis.com/v1beta/openai
-#      model    : gemini-2.0-flash  (gemini-2.5-flash, gemini-2.5-pro 도 가능)
+#      model    : gemini-2.5-flash  (gemini-2.5-pro, gemini-flash-latest 도 가능)
 #      api-key  : https://aistudio.google.com/apikey 에서 발급 (무료, 카드등록 X)
 #      한도     : 일 1500건, 분당 15건  → 졸프 데모/테스트엔 충분
 #
@@ -116,14 +125,14 @@ moderation:
 llm:
   base-url: ${LLM_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
   api-key: ${LLM_API_KEY:}
-  model: ${LLM_MODEL:gemini-2.0-flash}
+  model: ${LLM_MODEL:gemini-2.5-flash}
   temperature: 0.3
   max-tokens: ${LLM_MAX_TOKENS:2000}
 
 storage:
   local:
     root: ./storage
-    public-base-url: http://192.168.1.103:8080
+    public-base-url: ${STORAGE_PUBLIC_BASE_URL:http://localhost:8080}
 
 report:
   share:
@@ -140,18 +149,18 @@ management:
         enabled: true
 
 
+# 네이버 NCP Geocoding — 주소를 위경도로 변환 (관리자가 제휴업체를 주소로 등록할 때 사용).
+#   업체 "검색" 은 카카오 로컬 API 로 이미 이전됐다. 네이버 지역검색 키는 더 이상 쓰지 않는다.
+#   키 발급: https://console.ncloud.com  (Maps > Geocoding)
 naver:
   api:
-    client-id: aqAOaKc8a2cX9f89Z4Ut
-    client-secret: SagqZ25W1Y
-    search-url: https://openapi.naver.com/v1/search/local.json
-    ncp-client-id: 2fodq6j4zt
-    ncp-client-secret: dt29ilPU4aKy8bQ825P9Eu80TM3bE3uElrz080yn
-    geocode-url: https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode
+    ncp-client-id: ${NAVER_NCP_CLIENT_ID}
+    ncp-client-secret: ${NAVER_NCP_CLIENT_SECRET}
+    geocode-url: ${NAVER_GEOCODE_URL:https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode}
 
-# ⚠️ 운영 환경에선 아래 rest-key 를 env var (KAKAO_REST_KEY) 로 주입하고 yml 에선 ${KAKAO_REST_KEY} 로 참조하세요.
-# 지금은 개발 편의상 기존 naver 키와 동일한 방식(하드코딩)으로 두었습니다.
+# 카카오 로컬 API — 업체 키워드 검색.
+#   기본값 없음 — 미주입 시 기동 실패한다.
 kakao:
   api:
-    rest-key: ${KAKAO_REST_KEY:ccd56627d820f9a75d0929ce7396eda5}
+    rest-key: ${KAKAO_REST_KEY}
     local-url: https://dapi.kakao.com/v2/local/search/keyword.json
