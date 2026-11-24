@@ -210,7 +210,8 @@ async function buildGuideFromDiagnosis(
     return {
       guide: applyDbProductsToGuide(llmGuide, dbProducts),
       category,
-      isLlmGuide: true,
+      // 서버가 LLM 실패로 기본 가이드를 넣은 경우(guideFallback)에는 'AI 생성' 표시를 하지 않는다.
+      isLlmGuide: !result.guideFallback,
       isCallPro: result.guide.guide.next_action === "CALL_PRO" || getRiskScore(result) >= 70,
       usedDbProducts: dbProducts.length > 0,
     };

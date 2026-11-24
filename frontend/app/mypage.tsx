@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -16,7 +18,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import ScreenState from "../src/components/ScreenState";
 import { clearAccessToken } from "../src/store/tokenStorage";
 import { openReportPdf, listMyReports, MyReportItem } from "../src/api/reports";
-import { getMe, updateMe, Me, ResidenceType, RentType } from "../src/api/users";
+import { getMe, updateMe, withdrawMe, Me, ResidenceType, RentType } from "../src/api/users";
 import AddressSearchModal from "../src/components/AddressSearchModal";
 import {AddressResult} from "../src/api/addresses";
 
@@ -120,6 +122,9 @@ export default function MyPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [reports, setReports] = useState<MyReportItem[]>([]);
   const [editOpen, setEditOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawPassword, setWithdrawPassword] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
   const [editAddress, setEditAddress] = useState("");
   const [roadAddress, setRoadAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
@@ -433,9 +438,9 @@ export default function MyPage() {
                           <Text style={[styles.statusText, isReady && { color: MAIN_BLUE }]}>
                             {isReady
                                 ? "발급완료"
-                                : r.status === "GENERATING"
-                                    ? "생성중"
-                                    : "미발급"}
+                                : r.status === "FAILED"
+                                    ? "진단 실패"
+                                    : "미작성"}
                           </Text>
                         </View>
 
@@ -492,8 +497,79 @@ export default function MyPage() {
             <Text style={styles.logoutText}>로그아웃</Text>
           </Pressable>
 
+          <Pressable style={styles.withdrawLink} onPress={() => setWithdrawOpen(true)}>
+            <Text style={styles.withdrawLinkText}>회원 탈퇴</Text>
+          </Pressable>
+
           <Text style={styles.footerInfo}>© 2026 DduckTack. All rights reserved.</Text>
         </ScrollView>
+        <Modal
+            visible={withdrawOpen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => {
+              if (!withdrawing) setWithdrawOpen(false);
+            }}
+        >
+          <View style={styles.withdrawBackdrop}>
+            <View style={styles.withdrawCard}>
+              <Text style={styles.withdrawTitle}>회원 탈퇴</Text>
+              <Text style={styles.withdrawDesc}>
+                탈퇴하면 계정 정보(아이디·이메일·전화번호·주소)와 진단 기록·사진·리포트가 즉시 삭제되고
+                다시 로그인할 수 없어요. 작성한 게시글과 댓글은 '탈퇴회원'으로 표시됩니다.
+              </Text>
+              <TextInput
+                  style={styles.withdrawInput}
+                  value={withdrawPassword}
+                  onChangeText={setWithdrawPassword}
+                  placeholder="비밀번호를 입력해주세요"
+                  placeholderTextColor="#94a3b8"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  editable={!withdrawing}
+              />
+              <View style={styles.withdrawActions}>
+                <Pressable
+                    style={[styles.withdrawBtn, styles.withdrawCancel]}
+                    disabled={withdrawing}
+                    onPress={() => {
+                      setWithdrawOpen(false);
+                      setWithdrawPassword("");
+                    }}
+                >
+                  <Text style={styles.withdrawCancelText}>취소</Text>
+                </Pressable>
+                <Pressable
+                    style={[styles.withdrawBtn, styles.withdrawConfirm, !withdrawPassword && { opacity: 0.5 }]}
+                    disabled={withdrawing || !withdrawPassword}
+                    onPress={async () => {
+                      try {
+                        setWithdrawing(true);
+                        await withdrawMe(withdrawPassword);
+                        await clearAccessToken();
+                        setWithdrawOpen(false);
+                        Alert.alert("탈퇴 완료", "그동안 DduckTack을 이용해주셔서 감사합니다.");
+                        router.replace("/login");
+                      } catch (e: any) {
+                        const message =
+                            e?.response?.data?.message ?? "탈퇴 처리 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.";
+                        Alert.alert("탈퇴 실패", message);
+                      } finally {
+                        setWithdrawing(false);
+                        setWithdrawPassword("");
+                      }
+                    }}
+                >
+                  {withdrawing ? (
+                      <ActivityIndicator color="#fff" />
+                  ) : (
+                      <Text style={styles.withdrawConfirmText}>탈퇴하기</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
         <AddressSearchModal
             visible={addressSearchOpen}
             onClose={() => setAddressSearchOpen(false)}
@@ -750,6 +826,32 @@ const styles = StyleSheet.create({
   },
 
   logoutText: { color: "#ef4444", fontWeight: "700", fontSize: 14 },
+  withdrawLink: { alignSelf: "center", marginTop: 16, padding: 8 },
+  withdrawLinkText: { color: "#94a3b8", fontSize: 13, textDecorationLine: "underline" },
+  withdrawBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.5)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  withdrawCard: { backgroundColor: "#fff", borderRadius: 20, padding: 24 },
+  withdrawTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a", marginBottom: 10 },
+  withdrawDesc: { fontSize: 14, lineHeight: 21, color: "#475569", marginBottom: 16 },
+  withdrawInput: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#0f172a",
+  },
+  withdrawActions: { flexDirection: "row", gap: 10, marginTop: 20 },
+  withdrawBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  withdrawCancel: { backgroundColor: "#f1f5f9" },
+  withdrawCancelText: { color: "#334155", fontWeight: "700" },
+  withdrawConfirm: { backgroundColor: "#ef4444" },
+  withdrawConfirmText: { color: "#fff", fontWeight: "700" },
   footerInfo: {
     textAlign: "center",
     color: "#cbd5e1",

@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
-import { router, Stack } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
-import { listPosts, BOARD_TYPE_LABELS, PostListItem } from "../../src/api/community";
-import { getMe } from "../../src/api/users";
+import {
+  listMyPosts,
+  listMyCommentedPosts,
+  BOARD_TYPE_LABELS,
+  PostListItem,
+} from "../../src/api/community";
 
 const C = {
   primary: "#4F46E5",
@@ -18,8 +22,7 @@ const C = {
   card: "#FFFFFF",
 };
 
-const MAX_PAGES = 10;
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -31,38 +34,36 @@ function formatDate(value?: string | null) {
 export default function CommunityMy() {
   const [tab, setTab] = useState<"written" | "commented">("written");
   const [myPosts, setMyPosts] = useState<PostListItem[]>([]);
+  const [commentedPosts, setCommentedPosts] = useState<PostListItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  async function scanMyPosts(username: string) {
-    const collected: PostListItem[] = [];
-    let page = 0;
-    while (page < MAX_PAGES) {
-      const result = await listPosts({ page, size: PAGE_SIZE, sort: "latest" });
-      collected.push(...result.content.filter((p) => p.authorName === username));
-      if (result.last) break;
-      page += 1;
-    }
-    return collected;
-  }
 
   async function load() {
     try {
       setLoading(true);
-      const meData = await getMe();
-      const posts = await scanMyPosts(meData.username);
-      setMyPosts(posts);
+      const [written, commented] = await Promise.all([
+        listMyPosts(0, PAGE_SIZE),
+        listMyCommentedPosts(0, PAGE_SIZE),
+      ]);
+      setMyPosts(written.content);
+      setCommentedPosts(commented.content);
     } catch (e) {
       if (__DEV__) console.warn("[community] 내 활동 조회 실패", (e as any)?.response?.status);
       setMyPosts([]);
+      setCommentedPosts([]);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // 글 상세에서 수정·삭제 후 돌아와도 최신 목록을 보여준다.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
+
+  const items = tab === "written" ? myPosts : commentedPosts;
 
   return (
       <SafeAreaView edges={["top"]} style={styles.container}>
@@ -95,63 +96,54 @@ export default function CommunityMy() {
           </Pressable>
         </View>
 
-        {tab === "written" ? (
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-              {loading ? (
-                  <View style={styles.emptyBox}>
-                    <ActivityIndicator color={C.primary} />
-                  </View>
-              ) : myPosts.length === 0 ? (
-                  <View style={styles.emptyBox}>
-                    <Feather name="edit-2" size={40} color="#E2E8F0" />
-                    <Text style={styles.emptyText}>아직 작성한 글이 없어요</Text>
-                  </View>
-              ) : (
-                  <View style={styles.list}>
-                    {myPosts.map((item) => (
-                        <Pressable
-                            key={item.postId}
-                            style={styles.card}
-                            onPress={() => router.push(`/community/${item.postId}`)}
-                        >
-                          <View style={styles.cardHeaderRow}>
-                            <View style={styles.boardBadge}>
-                              <Text style={styles.boardBadgeText}>
-                                {BOARD_TYPE_LABELS[item.boardType]}
-                              </Text>
-                            </View>
-                          </View>
-                          <Text style={styles.cardTitle} numberOfLines={1}>
-                            {item.title}
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {loading ? (
+              <View style={styles.emptyBox}>
+                <ActivityIndicator color={C.primary} />
+              </View>
+          ) : items.length === 0 ? (
+              <View style={styles.emptyBox}>
+                <Feather
+                    name={tab === "written" ? "edit-2" : "message-circle"}
+                    size={40}
+                    color="#E2E8F0"
+                />
+                <Text style={styles.emptyText}>
+                  {tab === "written" ? "아직 작성한 글이 없어요" : "아직 댓글을 단 글이 없어요"}
+                </Text>
+              </View>
+          ) : (
+              <View style={styles.list}>
+                {items.map((item) => (
+                    <Pressable
+                        key={item.postId}
+                        style={styles.card}
+                        onPress={() => router.push(`/community/${item.postId}`)}
+                    >
+                      <View style={styles.cardHeaderRow}>
+                        <View style={styles.boardBadge}>
+                          <Text style={styles.boardBadgeText}>
+                            {BOARD_TYPE_LABELS[item.boardType]}
                           </Text>
-                          <Text style={styles.cardPreview} numberOfLines={2}>
-                            {item.contentPreview}
-                          </Text>
-                          <Text style={styles.metaText}>
-                            {formatDate(item.createdAt)} · 조회 {item.viewCount} · 좋아요{" "}
-                            {item.likeCount} · 댓글 {item.commentCount}
-                          </Text>
-                        </Pressable>
-                    ))}
-                  </View>
-              )}
+                        </View>
+                      </View>
+                      <Text style={styles.cardTitle} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.cardPreview} numberOfLines={2}>
+                        {item.contentPreview}
+                      </Text>
+                      <Text style={styles.metaText}>
+                        {formatDate(item.createdAt)} · 조회 {item.viewCount} · 좋아요{" "}
+                        {item.likeCount} · 댓글 {item.commentCount}
+                      </Text>
+                    </Pressable>
+                ))}
+              </View>
+          )}
 
-              {!loading && (
-                  <Text style={styles.noticeText}>
-                    최근 게시글 기준으로 조회됩니다. 오래된 글은 목록에 나타나지 않을 수 있어요.
-                  </Text>
-              )}
-
-              <View style={{ height: 40 }} />
-            </ScrollView>
-        ) : (
-            <View style={styles.emptyBox}>
-              <Feather name="message-circle" size={40} color="#E2E8F0" />
-              <Text style={styles.emptyText}>
-                댓글단 글 목록은 준비 중입니다.{"\n"}빠른 시일 내 지원 예정입니다.
-              </Text>
-            </View>
-        )}
+          <View style={{ height: 40 }} />
+        </ScrollView>
       </SafeAreaView>
   );
 }
@@ -217,7 +209,6 @@ const styles = StyleSheet.create({
   cardPreview: { fontSize: 13, color: "#475569", lineHeight: 19 },
   metaText: { fontSize: 12, color: "#94A3B8", marginTop: 4 },
 
-  noticeText: { fontSize: 12, color: "#94A3B8", textAlign: "center", marginTop: 16 },
 
   emptyBox: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingVertical: 60 },
   emptyText: { fontSize: 15, color: "#94A3B8", textAlign: "center", lineHeight: 22 },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Keyboard,
   Platform,
 } from "react-native";
-import { router, useLocalSearchParams, Stack } from "expo-router";
+import { router, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
@@ -125,6 +125,19 @@ export default function CommunityPostDetail() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
+
+  // 글쓰기·수정 화면에서 돌아왔을 때 최신 상태로 다시 불러온다 (첫 진입은 위 useEffect 가 처리).
+  const isFirstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstFocus.current) {
+        isFirstFocus.current = false;
+        return;
+      }
+      load();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   async function handleToggleLike() {
     if (!post || liking) return;

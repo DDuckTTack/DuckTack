@@ -178,9 +178,9 @@ const PROBLEM_CHIPS = [
 ];
 
 const STATS = [
-  { id: 1, value: "10,000+", label: "진단 완료" },
-  { id: 2, value: "5.0 ★", label: "전문가 평점" },
-  { id: 3, value: "99%", label: "고객 만족도" },
+  { id: 1, value: "6종", label: "진단 하자 유형" },
+  { id: 2, value: "최대 5장", label: "한 번에 분석" },
+  { id: 3, value: "무료", label: "AI 진단" },
 ];
 
 const SERVICE_CARDS = [

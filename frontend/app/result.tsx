@@ -364,8 +364,24 @@ function mapLastDiagnosisToResult(result: DiagnosisApiResult): ResultViewData {
 async function fetchHistoryResult(historyId: string): Promise<ResultViewData> {
   const res = await apiClient.get(`/api/histories/${historyId}`);
   const history = extractApiData(res.data);
+  const result = mapHistoryToResult(history, historyId);
 
-  return mapHistoryToResult(history, historyId);
+  // 히스토리 상세에는 가이드(AI 분석 요약)가 없어서, 진단 결과에서 가이드를 채운다.
+  if (!result.guide && result.diagnosisId) {
+    try {
+      const diagnosis = await fetchDiagnosisResult(result.diagnosisId);
+      return {
+        ...result,
+        guide: diagnosis.guide,
+        guideFallback: diagnosis.guideFallback,
+        imageUrl: result.imageUrl ?? diagnosis.imageUrl,
+      };
+    } catch {
+      // 가이드 없이도 결과 화면은 보여준다.
+    }
+  }
+
+  return result;
 }
 
 async function fetchDiagnosisResult(diagnosisId: string): Promise<ResultViewData> {
