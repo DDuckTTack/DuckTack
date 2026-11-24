@@ -2,6 +2,8 @@ import {useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "../../api/axios";
 import {subscribeRealtime} from "../../api/realtime";
+const ISSUE_LABELS = {MOLD:"곰팡이", LEAK:"누수", CRACK:"균열", PEEL:"박리", CORROSION:"부식", BULGE:"들뜸", DAMAGE:"파손", ELECTRIC:"전기", GAS:"가스"};
+const issueLabel = (type) => ISSUE_LABELS[type] || type || "하자";
 
 const unwrap = (response) => response?.data?.data ?? response?.data ?? response;
 const won = (value) => `${Number(value || 0).toLocaleString("ko-KR")}원`;
@@ -11,18 +13,20 @@ const timeLeft = (deadline) => {
     if (minutes < 60) return `${minutes}분 남음`;
     return `${Math.floor(minutes / 60)}시간 ${minutes % 60}분 남음`;
 };
+// 사진은 API 서버 주소 기준으로 만든다. (운영은 Caddy 가 /storage 를 백엔드로 넘기므로 :8080 을 붙이면 깨진다)
 const imageUrl = (value) => {
     if (!value) return "";
     const text = String(value);
+    const baseUrl = String(axios.defaults.baseURL || "").replace(/\/api\/?$/, "").replace(/\/$/, "");
     const storageIndex = text.indexOf("/storage/");
     const uploadIndex = text.indexOf("/uploads/");
     const pathIndex = storageIndex >= 0 ? storageIndex : uploadIndex;
     if (pathIndex >= 0) {
-        return `${window.location.protocol}//${window.location.hostname}:8080${text.slice(pathIndex)}`;
+        return `${baseUrl}${text.slice(pathIndex)}`;
     }
     return /^https?:/.test(text)
         ? text
-        : `${window.location.protocol}//${window.location.hostname}:8080${text.startsWith("/") ? "" : "/"}${text}`;
+        : `${baseUrl}${text.startsWith("/") ? "" : "/"}${text}`;
 };
 
 export default function CompanyBidsPage() {
@@ -170,7 +174,7 @@ export default function CompanyBidsPage() {
                         <div style={{...s.resultIcon,background:success ? "#DCFCE7" : failed ? "#F1F5F9" : "#FEF3C7"}}>
                             {success ? "✓" : failed ? "–" : "…"}
                         </div>
-                        <div style={{flex:1}}><b>{result.issueType} 수리 입찰</b>
+                        <div style={{flex:1}}><b>{issueLabel(result.issueType)} 수리 입찰</b>
                             <div style={s.resultMeta}>제안 금액 {won(result.price)}</div></div>
                         <span style={{...s.resultBadge,color:success ? "#15803D" : failed ? "#64748B" : "#B45309",
                             background:success ? "#DCFCE7" : failed ? "#F1F5F9" : "#FEF3C7"}}>
@@ -191,7 +195,7 @@ export default function CompanyBidsPage() {
                         {item.imageUrl ? <img style={s.image} src={imageUrl(item.imageUrl)} alt="사용자 진단 사진" loading="lazy" decoding="async"/>
                             : <div style={s.noImage}><span>🖼️</span>진단 사진 없음</div>}
                         <div style={s.cardBody}>
-                            <div style={s.cardTop}><div style={{display:"flex",gap:7,alignItems:"center"}}><span style={s.issueBadge}>{item.issueType}</span>
+                            <div style={s.cardTop}><div style={{display:"flex",gap:7,alignItems:"center"}}><span style={s.issueBadge}>{issueLabel(item.issueType)}</span>
                                 {item.myBidId && <span style={s.submittedBadge}>입찰 완료</span>}</div>
                                 <b style={s.deadline}>⏱ {timeLeft(item.deadline)}</b></div>
                             <h3 style={s.requestTitle}>{item.userName}님의 수리 요청</h3>

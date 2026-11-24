@@ -11,5 +11,7 @@ public interface FileRecordRepository extends JpaRepository<FileRecord, Long> {
     boolean existsByStorageKeyAndUserUsername(String storageKey, String username);
 
     // ⭐ 추가
+    List<FileRecord> findByUserId(Long userId);
+
     List<FileRecord> findByDiagnosisIdAndCategory(Long diagnosisId, FileCategory category);
 }

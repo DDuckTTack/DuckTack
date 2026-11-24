@@ -28,7 +28,8 @@ public class AdminUserDtos {
             String address,
             ResidenceType residenceType,
             RentType rentType,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            boolean blocked
     ) {}
 
     /** 사용자 상세 페이지 응답 */

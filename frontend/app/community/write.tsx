@@ -34,6 +34,9 @@ const C = {
   card: "#FFFFFF",
 };
 
+// 업체홍보 게시판은 업체 회원만 작성 가능 (업체 웹에서 작성). 앱 사용자에게는 노출하지 않는다.
+const WRITABLE_BOARD_TYPES: BoardType[] = BOARD_TYPE_ORDER.filter((type) => type !== "PROMOTION");
+
 export default function CommunityWrite() {
   const { postId, mode, boardType: initialBoardType } = useLocalSearchParams<{
     postId?: string;
@@ -44,7 +47,7 @@ export default function CommunityWrite() {
   const isEdit = mode === "edit" && !!postId;
 
   const [boardType, setBoardType] = useState<BoardType>(
-      (initialBoardType as BoardType) || "FREE"
+      WRITABLE_BOARD_TYPES.includes(initialBoardType as BoardType) ? (initialBoardType as BoardType) : "FREE"
   );
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -155,7 +158,7 @@ export default function CommunityWrite() {
               <View style={styles.section}>
                 <Text style={styles.label}>게시판</Text>
                 <View style={styles.boardChipRow}>
-                  {BOARD_TYPE_ORDER.map((type) => (
+                  {WRITABLE_BOARD_TYPES.map((type) => (
                       <Pressable
                           key={type}
                           onPress={() => setBoardType(type)}

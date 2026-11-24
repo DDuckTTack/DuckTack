@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
-import { router, Stack } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
@@ -94,6 +94,19 @@ export default function CommunityBoard() {
     load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBoard, sort, submittedKeyword, region]);
+
+  // 글쓰기·수정 화면에서 돌아왔을 때 최신 상태로 다시 불러온다 (첫 진입은 위 useEffect 가 처리).
+  const isFirstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (isFirstFocus.current) {
+        isFirstFocus.current = false;
+        return;
+      }
+      load(true);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   function handleSearchSubmit() {
     setSubmittedKeyword(keyword.trim());

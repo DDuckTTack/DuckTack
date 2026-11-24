@@ -379,8 +379,8 @@ export default function Histories() {
             renderItem={({ item: it }) => {
                   const id = getHistoryId(it);
                   const iconData = getIssueIcon(it.issueType);
-                  const isHighRisk = it.riskScore > 70;
-                  const isLowRisk = it.riskScore < 30;
+                  const isHighRisk = it.riskScore >= 70;
+                  const isLowRisk = it.riskScore < 40;
                   const reviewAvailable = canWriteReview(it);
                   const reviewWritten = Boolean((it as any).reviewWritten);
                   const historyStatusText = getHistoryStatusText(it);
@@ -429,7 +429,7 @@ export default function Histories() {
                                       },
                                     ]}
                                 >
-                                  {isHighRisk ? "위험" : isLowRisk ? "낮음" : "보통"}
+                                  {isHighRisk ? "높음" : isLowRisk ? "낮음" : "중간"}
                                 </Text>
                               </View>
                             </View>

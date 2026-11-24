@@ -90,6 +90,13 @@ public class BidRequest {
         this.status = Status.SELECTED;
     }
 
+    /** 회원 탈퇴 시 요청자 주소·좌표 파기 (업체 거래 기록은 유지). */
+    public void anonymizeRequester() {
+        this.address = "(탈퇴한 회원)";
+        this.latitude = null;
+        this.longitude = null;
+    }
+
     public void expireIfNeeded() {
         if (status == Status.OPEN && !deadline.isAfter(OffsetDateTime.now())) status = Status.EXPIRED;
     }

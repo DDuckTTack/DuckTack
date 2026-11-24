@@ -37,9 +37,22 @@ export async function requestCurrentCoordinates(): Promise<Coordinates> {
     };
   }
 
-  const current = await Location.getCurrentPositionAsync({
-    accuracy: Location.Accuracy.Balanced,
-  });
+  // getCurrentPositionAsync 는 새 위치 신호가 안 오면(실내·에뮬레이터) 끝나지 않는다.
+  // 8초 안에 못 받으면 오래된 마지막 위치라도 쓰고, 그것도 없으면 실패 처리해 화면이 멈추지 않게 한다.
+  const current = await Promise.race([
+    Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+  ]);
+
+  if (!current) {
+    const stale = await Location.getLastKnownPositionAsync();
+    if (!stale?.coords) throw new Error("LOCATION_TIMEOUT");
+    return {
+      latitude: stale.coords.latitude,
+      longitude: stale.coords.longitude,
+      accuracy: stale.coords.accuracy,
+    };
+  }
 
   return {
     latitude: current.coords.latitude,

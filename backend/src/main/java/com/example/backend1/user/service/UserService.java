@@ -4,6 +4,7 @@ import com.example.backend1.common.ApiException;
 import com.example.backend1.common.ErrorCode;
 import com.example.backend1.security.JwtTokenProvider;
 import com.example.backend1.user.domain.User;
+import com.example.backend1.user.domain.UserRole;
 import com.example.backend1.user.dto.AuthDtos;
 import com.example.backend1.user.dto.UserDtos;
 import com.example.backend1.user.repo.UserRepository;
@@ -27,6 +28,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
     private final EmailVerificationService emailVerificationService;
+    private final AccountWithdrawalService accountWithdrawalService;
 
     public UserService(
             UserRepository userRepository,
@@ -34,7 +36,8 @@ public class UserService {
             AuthenticationManager authenticationManager,
             JwtTokenProvider jwtTokenProvider,
             RefreshTokenService refreshTokenService,
-            EmailVerificationService emailVerificationService
+            EmailVerificationService emailVerificationService,
+            AccountWithdrawalService accountWithdrawalService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -42,6 +45,7 @@ public class UserService {
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenService = refreshTokenService;
         this.emailVerificationService = emailVerificationService;
+        this.accountWithdrawalService = accountWithdrawalService;
     }
 
     @Transactional
@@ -121,8 +125,9 @@ public class UserService {
         User user = userRepository.findByUsername(req.username())
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        log.info("입력 PW: [{}]", req.password());
-        log.info("MATCH 결과: {}", passwordEncoder.matches(req.password(), user.getPasswordHash()));
+        if (user.isBlocked()) {
+            throw new ApiException(ErrorCode.USER_BLOCKED);
+        }
 
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.username(), req.password())
@@ -149,6 +154,9 @@ public class UserService {
     @Transactional
     public AuthDtos.TokenResponse refresh(AuthDtos.RefreshRequest req) {
         var current = refreshTokenService.validateActive(req.refreshToken());
+        if (current.getUser().isBlocked()) {
+            throw new ApiException(ErrorCode.USER_BLOCKED);
+        }
         var rotated = refreshTokenService.rotate(current);
 
         User user = current.getUser();
@@ -192,6 +200,35 @@ public class UserService {
                 user.getResidenceType(),
                 user.getRentType()
         );
+    }
+
+    /**
+     * 회원 탈퇴. 진단 기록·파일은 {@link AccountWithdrawalService} 에서 파기하고,
+     * 사용자 행은 게시글·업체 거래 기록의 FK 때문에 남기되 개인정보를 지운 로그인 불가 계정으로 전환한다.
+     * 아이디가 바뀌므로 기존 액세스 토큰도 JwtAuthenticationFilter 에서 즉시 거부된다.
+     */
+    @Transactional
+    public void withdraw(String username, UserDtos.WithdrawRequest req) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getRole() != UserRole.USER) {
+            throw new ApiException(ErrorCode.ACCESS_DENIED, "업체·관리자 계정은 앱에서 탈퇴할 수 없습니다.");
+        }
+        if (req.password() == null || !passwordEncoder.matches(req.password(), user.getPasswordHash())) {
+            throw new ApiException(ErrorCode.INVALID_INPUT, "비밀번호가 일치하지 않습니다.");
+        }
+
+        refreshTokenService.revokeAllForUser(username);
+        accountWithdrawalService.purgeUserData(user);
+
+        String suffix = java.util.UUID.randomUUID().toString().substring(0, 6);
+        user.withdraw(
+                "탈퇴회원_" + user.getId() + "_" + suffix,
+                passwordEncoder.encode(java.util.UUID.randomUUID().toString())
+        );
+
+        log.info("User withdrawn: id={}", user.getId());
     }
 
     @Transactional

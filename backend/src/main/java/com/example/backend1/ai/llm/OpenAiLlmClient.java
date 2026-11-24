@@ -49,7 +49,7 @@ public class OpenAiLlmClient {
             @Value("${llm.api-key:}") String apiKey,
             @Value("${llm.model:gemini-2.5-flash}") String model,
             @Value("${llm.temperature:0.3}") double temperature,
-            @Value("${llm.max-tokens:2000}") int maxTokens
+            @Value("${llm.max-tokens:8192}") int maxTokens
     ) {
         this.restTemplate = restTemplate;
         // 마지막 슬래시 정리 — 호출부에서 "/chat/completions" 를 붙이기 때문
@@ -180,6 +180,9 @@ public class OpenAiLlmClient {
             // 토큰 사용량 로그 (비용 모니터링용)
             Object usage = respBody.get("usage");
             log.info("[LLM] model={} usage={} content.len={}", model, usage, content.length());
+            if ("length".equals(firstMap.get("finish_reason"))) {
+                log.warn("[LLM] 응답이 max-tokens({}) 에서 잘렸습니다. LLM_MAX_TOKENS 를 늘리세요.", maxTokens);
+            }
 
             return content;
         } catch (HttpStatusCodeException e) {

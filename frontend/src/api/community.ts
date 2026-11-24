@@ -123,6 +123,17 @@ function unwrapData<T>(raw: any): T {
   return raw?.data ?? raw;
 }
 
+function toPostPage(raw: any): PostPage {
+  const page = unwrapData<any>(raw);
+  return {
+    content: Array.isArray(page?.content) ? page.content : [],
+    totalPages: Number(page?.totalPages ?? 0),
+    totalElements: Number(page?.totalElements ?? 0),
+    last: Boolean(page?.last ?? true),
+    number: Number(page?.number ?? 0),
+  };
+}
+
 export async function listPosts(params: {
   boardType?: BoardType;
   keyword?: string;
@@ -142,15 +153,17 @@ export async function listPosts(params: {
     },
   });
 
-  const page = unwrapData<any>(res.data);
+  return toPostPage(res.data);
+}
 
-  return {
-    content: Array.isArray(page?.content) ? page.content : [],
-    totalPages: Number(page?.totalPages ?? 0),
-    totalElements: Number(page?.totalElements ?? 0),
-    last: Boolean(page?.last ?? true),
-    number: Number(page?.number ?? 0),
-  };
+export async function listMyPosts(page = 0, size = 20): Promise<PostPage> {
+  const res = await apiClient.get("/api/community/me/posts", { params: { page, size } });
+  return toPostPage(res.data);
+}
+
+export async function listMyCommentedPosts(page = 0, size = 20): Promise<PostPage> {
+  const res = await apiClient.get("/api/community/me/commented-posts", { params: { page, size } });
+  return toPostPage(res.data);
 }
 
 export async function getPost(postId: number | string): Promise<PostDetail> {

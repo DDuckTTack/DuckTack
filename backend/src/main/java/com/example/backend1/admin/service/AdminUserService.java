@@ -44,6 +44,17 @@ public class AdminUserService {
     return userRepository.findAll(pageable).map(this::toListItem);
   }
 
+  /** 관리자 차단: 이후 로그인·토큰 재발급이 막힌다. 관리자 계정은 차단할 수 없다. */
+  @Transactional
+  public void setBlocked(Long id, boolean blocked) {
+    User user = userRepository.findById(id)
+            .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+    if (blocked && user.getRole() == com.example.backend1.user.domain.UserRole.ADMIN) {
+      throw new ApiException(ErrorCode.ACCESS_DENIED);
+    }
+    if (blocked) user.block(); else user.unblock();
+  }
+
   @Transactional(readOnly = true)
   public AdminUserDtos.UserDetailResponse getUser(Long id) {
     User user = userRepository.findById(id)
@@ -143,7 +154,8 @@ public class AdminUserService {
             u.getAddress(),
             u.getResidenceType(),
             u.getRentType(),
-            u.getCreatedAt()
+            u.getCreatedAt(),
+            u.isBlocked()
     );
   }
 }

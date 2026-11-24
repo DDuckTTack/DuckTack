@@ -47,4 +47,7 @@ public class UserDtos {
             Double latitude,
             Double longitude
     ) {}
+
+    // 회원 탈퇴 요청: 본인 확인용 비밀번호
+    public record WithdrawRequest(String password) {}
 }

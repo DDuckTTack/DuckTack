@@ -21,6 +21,10 @@ const left = (deadline:string) => {
   if (minutes < 60) return `${minutes}분 남음`;
   return `${Math.floor(minutes / 60)}시간 ${minutes % 60}분 남음`;
 };
+const ISSUE_LABELS:Record<string,string> = {
+  MOLD:"곰팡이", LEAK:"누수", CRACK:"균열", PEEL:"박리", CORROSION:"부식", BULGE:"들뜸", DAMAGE:"파손", ELECTRIC:"전기", GAS:"가스",
+};
+const issueLabel = (type?:string) => (type && ISSUE_LABELS[type]) || type || "하자";
 const formatDate = (value:string) => new Date(value).toLocaleString("ko-KR", {
   month:"long", day:"numeric", hour:"2-digit", minute:"2-digit",
 });
@@ -78,7 +82,7 @@ export default function BidListPage() {
               <View style={s.cardTop}><View style={{...s.status,borderColor:status.bg,backgroundColor:status.bg}}>
                 <Ionicons name={status.icon as any} size={15} color={status.color}/><Text style={{...s.statusText,color:status.color}}>{status.label}</Text></View>
                 {item.status === "OPEN" && <Text style={s.deadline}>{left(item.deadline)}</Text>}</View>
-              <Text style={s.issue}>{item.issueType} 수리 입찰</Text>
+              <Text style={s.issue}>{issueLabel(item.issueType)} 수리 입찰</Text>
               <Text style={s.address} numberOfLines={1}>📍 {item.address}</Text>
               <View style={s.divider}/>
               <View style={s.bottom}><View><Text style={[s.offerCount, item.status === "OPEN" && (item.offers?.length || 0) <= 1 && s.offerCountLow]}>{item.offers?.length || 0}개 업체 참여</Text>

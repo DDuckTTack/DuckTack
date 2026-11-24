@@ -88,4 +88,17 @@ public class LocalFileStorage implements FileStorage {
     public String getPublicUrl(String key) {
         return publicBaseUrl + "/storage/" + key;
     }
+
+    @Override
+    public void delete(String key) {
+        if (key == null || key.isBlank()) return;
+        try {
+            Path base = Paths.get(root).toAbsolutePath().normalize();
+            Path path = base.resolve(key).normalize();
+            if (!path.startsWith(base)) return; // 경로 이탈 방지
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            throw new RuntimeException("파일 삭제 실패: " + key, e);
+        }
+    }
 }

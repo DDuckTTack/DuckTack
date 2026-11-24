@@ -100,6 +100,14 @@ public class Reservation {
     public void setRequestNote(String requestNote) { this.requestNote = requestNote; }
     public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
 
+    /** 회원 탈퇴 시 예약자 개인정보 파기 (업체 예약·정산 기록은 유지). */
+    public void anonymizeCustomer() {
+        this.customerName = "탈퇴한 회원";
+        this.phoneNumber = null;
+        this.address = null;
+        this.requestNote = null;
+    }
+
     public void setRepairCompletedDate(LocalDate repairCompletedDate) {
         this.repairCompletedDate = repairCompletedDate;
     }

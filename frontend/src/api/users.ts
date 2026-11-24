@@ -73,3 +73,8 @@ export async function updateMe(req: UpdateMeRequest): Promise<Me> {
   const data = body?.data ?? body;
   return normalizeMe(data);
 }
+
+// 회원 탈퇴: 비밀번호 재확인 후 서버에서 개인정보를 파기한다.
+export async function withdrawMe(password: string): Promise<void> {
+  await apiClient.post("/api/users/me/withdraw", { password });
+}

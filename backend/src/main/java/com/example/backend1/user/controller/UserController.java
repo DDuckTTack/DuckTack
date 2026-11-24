@@ -34,4 +34,14 @@ public class UserController {
         // 인증 객체와 수정 요청 데이터를 서비스에 전달
         return ApiResponse.ok(userService.updateProfile(authentication.getName(), req));
     }
+
+    /** 회원 탈퇴 (비밀번호 재확인) */
+    @PostMapping("/me/withdraw")
+    public ApiResponse<Void> withdraw(
+            Authentication authentication,
+            @RequestBody UserDtos.WithdrawRequest req
+    ) {
+        userService.withdraw(authentication.getName(), req);
+        return ApiResponse.ok("withdrawn", null);
+    }
 }

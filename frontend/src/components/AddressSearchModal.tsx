@@ -1,5 +1,5 @@
 import {useState} from "react";
-import {ActivityIndicator, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View} from "react-native";
+import {ActivityIndicator, Alert, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View} from "react-native";
 import {Feather} from "@expo/vector-icons";
 import {AddressResult, searchAddresses} from "../api/addresses";
 
@@ -14,6 +14,7 @@ export default function AddressSearchModal({visible,onClose,onSelect}:{
   const search = async () => {
     if (query.trim().length < 2) return;
     try { setLoading(true); setItems(await searchAddresses(query)); setSearched(true); }
+    catch { Alert.alert("주소 검색 실패", "주소를 불러오지 못했어요. 잠시 후 다시 시도해주세요."); }
     finally { setLoading(false); }
   };
 

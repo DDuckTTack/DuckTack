@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 // [원본 API 및 스토리지 로직 유지]
 import { login } from "../src/api/auth";
-import { markDustIntroSeen, saveAccessToken, shouldShowDustIntro } from "../src/store/tokenStorage";
+import { markDustIntroSeen, saveAccessToken, saveRefreshToken, shouldShowDustIntro } from "../src/store/tokenStorage";
 
 const C = {
   primary:   "#4F46E5",
@@ -47,11 +47,17 @@ export default function Login() {
       setIsSubmitting(true);
       const data = await login({ username: username.trim(), password: password.trim() });
       await saveAccessToken(data.accessToken);
+      if (data.refreshToken) await saveRefreshToken(data.refreshToken);
       const trimmedUsername = username.trim();
       const showIntro = await shouldShowDustIntro(trimmedUsername);
       if (showIntro) await markDustIntroSeen(trimmedUsername);
       router.replace(showIntro ? "/(tabs)?intro=1" : "/(tabs)");
     } catch (e: any) {
+      // 관리자 차단 계정은 비밀번호 문제가 아니므로 서버 안내를 그대로 보여준다.
+      if (e?.response?.data?.code === "USER_BLOCKED") {
+        Alert.alert("이용 제한", e.response.data.message ?? "이용이 제한된 계정입니다. 고객센터로 문의해주세요.");
+        return;
+      }
       Alert.alert("로그인 실패", "아이디/비밀번호 또는 서버 상태를 확인해주세요.");
     } finally {
       setIsSubmitting(false);

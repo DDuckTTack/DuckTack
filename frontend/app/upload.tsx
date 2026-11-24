@@ -221,6 +221,8 @@ export default function Upload() {
       await setPendingImages(uris);
 
       router.push("/analyzing");
+      // 분석으로 넘긴 사진은 비워서, 다음 진단 때 이전 사진이 남아 있지 않게 한다.
+      setImages([]);
     } catch {
       if (__DEV__) console.warn("[upload] 이미지 임시 저장 실패");
       showAlert("진단 준비 실패", "사진 정보를 저장하지 못했습니다. 다시 시도해주세요.");

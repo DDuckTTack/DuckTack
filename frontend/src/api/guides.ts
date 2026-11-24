@@ -310,7 +310,6 @@ export async function getExpertInfo(
 
   const estimate = estimateRepairPrice(normalizedIssueType, riskScore, areaRatio);
   const ratio = normalizeAreaRatio(areaRatio);
-  const areaText = ratio === null ? "면적 정보 없음" : `${Math.round(ratio * 100)}% 내외`;
 
   return {
     estimateRange: estimate.label,
@@ -318,7 +317,7 @@ export async function getExpertInfo(
     notes: [
       `하자 유형: ${estimate.issueLabel}`,
       `위험도 구간: ${riskBandLabel(estimate.riskBand)}${riskScore !== null && riskScore !== undefined ? `(${Math.round(Number(riskScore))}점)` : ""}`,
-      `SAM 손상 면적 비율: ${areaText} · 면적 보정: ${estimate.areaLabel}(${estimate.areaFactor.toFixed(1)}배)`,
+      ...(ratio === null ? [] : [`손상 면적: 사진 기준 약 ${Math.round(ratio * 100)}% (${estimate.areaLabel})`]),
       "AI가 감지한 하자 유형, 손상 면적, 위험도 점수를 기반으로 산정한 참고용 예상 비용입니다.",
       "실제 견적은 현장 상태와 업체 확인에 따라 달라질 수 있습니다.",
     ],

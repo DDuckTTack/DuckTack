@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const ACCESS_TOKEN_KEY = "accessToken";
+const REFRESH_TOKEN_KEY = "refreshToken";
 const DUST_INTRO_SEEN_PREFIX = "dustIntroSeen:";
 
 // SecureStore(암호화 저장소)는 네이티브(iOS/Android)에서만 동작한다.
@@ -37,9 +38,28 @@ export async function getAccessToken(): Promise<string | null> {
   return null;
 }
 
+// 액세스 토큰(2시간) 만료 시 재발급에 쓰는 리프레시 토큰(30일).
+export async function saveRefreshToken(token: string) {
+  if (useSecureStore) {
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+  } else {
+    await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
+  }
+}
+
+export async function getRefreshToken(): Promise<string | null> {
+  return useSecureStore
+      ? SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
+      : AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+/** 로그아웃: 액세스·리프레시 토큰을 모두 지운다. */
 export async function clearAccessToken() {
   if (useSecureStore) {
     await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  } else {
+    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
   }
   // 남아있을 수 있는 이전(평문) 저장분도 함께 제거
   await AsyncStorage.removeItem(ACCESS_TOKEN_KEY);

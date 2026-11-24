@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface BidRequestRepository extends JpaRepository<BidRequest, Long> {
     List<BidRequest> findByUserUsernameOrderByCreatedAtDesc(String username);
+    List<BidRequest> findByUserId(Long userId);
+    boolean existsByHistoryId(Long historyId);
     Optional<BidRequest> findByIdAndUserUsername(Long id, String username);
     List<BidRequest> findByStatusOrderByCreatedAtDesc(BidRequest.Status status);
     List<BidRequest> findAllByOrderByCreatedAtDesc();
