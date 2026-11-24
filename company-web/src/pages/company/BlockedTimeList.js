@@ -1,16 +1,23 @@
 import { useEffect, useState } from "react";
 import axios from "../../api/axios";
 
-export default function BlockedTimeList({ date }) {
-    const [blockedTimes, setBlockedTimes] = useState([]);
+// 캘린더 화면이 선택 날짜의 차단 시간을 이미 불러와 blockedTimes 로 넘긴다.
+// (예전에는 date 만 받아 직접 조회했는데, 넘겨준 목록을 무시해 항상 "없음"으로 보였다)
+export default function BlockedTimeList({ blockedTimes: blockedTimesProp, date }) {
+    const [fetched, setFetched] = useState([]);
 
     useEffect(() => {
-        if (!date) return;
+        if (blockedTimesProp || !date) return;
 
-        axios.get(`/api/company/unavailable/times?date=${date}`)
-            .then(res => setBlockedTimes(res.data))
+        axios.get("/api/company/unavailable-times")
+            .then(res => {
+                const list = res.data?.data ?? res.data;
+                setFetched((Array.isArray(list) ? list : []).filter(t => String(t.date) === String(date)));
+            })
             .catch(() => alert("차단 시간 조회 실패"));
-    }, [date]);
+    }, [blockedTimesProp, date]);
+
+    const blockedTimes = blockedTimesProp ?? fetched;
 
     // 스타일 정의
     const styles = {

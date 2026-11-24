@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "../../api/axios";
 import { layout, badgeColors, actionBtn } from "./adminTheme";
+const ISSUE_LABELS = {MOLD:"곰팡이", LEAK:"누수", CRACK:"균열", PEEL:"박리", CORROSION:"부식", BULGE:"들뜸", DAMAGE:"파손", ELECTRIC:"전기", GAS:"가스"};
+const issueLabel = (type) => ISSUE_LABELS[type] || type || "하자";
 
 const STATUS = {
     OPEN: { label: "진행 중", color: badgeColors.warning.text, bg: badgeColors.warning.bg },
@@ -78,7 +80,7 @@ export default function AdminBidsPage() {
                 return <section key={item.id} style={s.card}>
                     <button style={s.cardHead} onClick={() => setExpandedId(expanded ? null : item.id)}>
                         <div style={s.idBox}>#{item.id}</div>
-                        <div style={s.mainInfo}><div style={s.nameRow}><strong style={s.issue}>{item.issueType} 진단</strong><span style={{...s.badge,color:meta.color,backgroundColor:meta.bg}}>{meta.label}</span></div>
+                        <div style={s.mainInfo}><div style={s.nameRow}><strong style={s.issue}>{issueLabel(item.issueType)} 진단</strong><span style={{...s.badge,color:meta.color,backgroundColor:meta.bg}}>{meta.label}</span></div>
                             <div style={s.meta}>{item.username} · 입찰 {offers.length}개 · 생성 {dateTime(item.createdAt)}</div></div>
                         <div style={s.selectedSummary}>{item.selectedCompanyName ? <><span>선정 업체</span><strong>{item.selectedCompanyName}</strong></> : <span>선정 업체 없음</span>}</div>
                         <span style={s.chevron}>{expanded ? '▲' : '▼'}</span>

@@ -16,10 +16,12 @@ export default function TimeSelector({ date }) {
         if (!date) return;
 
         // 차단 시간 조회
-        axios.get(`/api/company/unavailable/times?date=${date}`)
+        axios.get("/api/company/unavailable-times")
             .then(res => {
-                // 응답 데이터 구조에 따라 t.time 혹은 t 추출
-                const blocked = res.data.map(t => typeof t === 'object' ? t.time : t);
+                const list = res.data?.data ?? res.data;
+                const blocked = (Array.isArray(list) ? list : [])
+                    .filter(t => typeof t !== 'object' || String(t.date) === String(date))
+                    .map(t => typeof t === 'object' ? t.time : t);
                 setBlockedTimes(blocked);
             });
 
