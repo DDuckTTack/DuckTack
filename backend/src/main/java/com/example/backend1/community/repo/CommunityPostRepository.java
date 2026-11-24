@@ -14,12 +14,15 @@ import java.util.Optional;
 
 public interface CommunityPostRepository extends JpaRepository<CommunityPost, Long> {
 
+    boolean existsByTitle(String title);
+
     @Query("""
             select p
             from CommunityPost p
             where p.status = :status
               and (:boardType is null or p.boardType = :boardType)
               and (:regionCode is null or p.regionCode = :regionCode)
+              and :sortKey is not null
               and (:keyword = ''
                    or lower(p.title) like lower(concat('%', :keyword, '%'))
                    or lower(p.content) like lower(concat('%', :keyword, '%')))

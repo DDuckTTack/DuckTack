@@ -11,6 +11,7 @@ import {
   Keyboard,
   Platform,
   Alert,
+  type ScrollViewInstance,
 } from "react-native";
 import { router, Stack } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,7 +54,7 @@ export default function SupportScreen() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const lastIdRef = useRef<number | null>(null);
 
   useEffect(() => {
