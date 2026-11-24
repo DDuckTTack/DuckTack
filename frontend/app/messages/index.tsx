@@ -162,10 +162,10 @@ export default function MessagesInbox() {
                       ))}
                       <Text style={styles.sectionTitle}>최근 쪽지</Text>
                     </View>
-                ) : null}
+                ) : undefined}
                 ListEmptyComponent={tab === "COMPANY" ? (
                     <Text style={styles.noConversationText}>아직 주고받은 쪽지가 없어요.</Text>
-                ) : null}
+                ) : undefined}
                 renderItem={({ item }) => (
                     <Pressable
                         style={styles.card}

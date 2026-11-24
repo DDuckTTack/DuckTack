@@ -11,6 +11,7 @@ import {
   Keyboard,
   Platform,
   Alert,
+  type ScrollViewInstance,
 } from "react-native";
 import { router, useLocalSearchParams, Stack } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -50,6 +51,13 @@ function formatTime(value: string | null) {
   return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function mergeMessages(current: MessageItem[], incoming: MessageItem[]): MessageItem[] {
+  const byId = new Map<number, MessageItem>();
+  for (const message of current) byId.set(Number(message.id), message);
+  for (const message of incoming) byId.set(Number(message.id), message);
+  return Array.from(byId.values()).sort((a, b) => Number(a.id) - Number(b.id));
+}
+
 export default function MessageThread() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const insets = useSafeAreaInsets();
@@ -68,8 +76,9 @@ export default function MessageThread() {
   const [reportDetail, setReportDetail] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
 
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const lastIdRef = useRef<number | null>(null);
+  const pollingRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -96,6 +105,8 @@ export default function MessageThread() {
   }, [conversationId]);
 
   const poll = useCallback(async () => {
+    if (pollingRef.current) return;
+    pollingRef.current = true;
     try {
       // 대화가 비어있는 상태로 들어오면 기준 id가 없다. 이때 증분 조회를 건너뛰면
       // 첫 메시지가 도착해도 화면에 영영 안 뜨므로, 기준 id가 없을 땐 전체를 다시 읽는다.
@@ -110,11 +121,16 @@ export default function MessageThread() {
 
       const newMessages = await listMessages(conversationId, { afterId: lastIdRef.current });
       if (newMessages.length > 0) {
-        setMessages((prev) => [...prev, ...newMessages]);
-        lastIdRef.current = newMessages[newMessages.length - 1].id;
+        setMessages((prev) => mergeMessages(prev, newMessages));
+        lastIdRef.current = Math.max(
+            lastIdRef.current ?? 0,
+            ...newMessages.map((message) => Number(message.id))
+        );
       }
     } catch (e) {
       if (__DEV__) console.log("쪽지 폴링 실패:", e);
+    } finally {
+      pollingRef.current = false;
     }
   }, [conversationId]);
 
@@ -149,7 +165,7 @@ export default function MessageThread() {
     try {
       setSending(true);
       const sent = await sendMessage(conversationId, content);
-      setMessages((prev) => [...prev, sent]);
+      setMessages((prev) => mergeMessages(prev, [sent]));
       lastIdRef.current = sent.id;
       setInput("");
     } catch (e: any) {

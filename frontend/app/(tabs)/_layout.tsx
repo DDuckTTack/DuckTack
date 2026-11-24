@@ -70,9 +70,10 @@ export default function TabsLayout() {
 }
 
 function TabIcon({ focused, color, name }: { focused: boolean; color: ColorValue; name: any }) {
+  const iconColor = typeof color === "number" ? "#94a3b8" : color ?? "#94a3b8";
   return (
     <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-      <Ionicons name={focused ? name : `${name}-outline`} size={22} color={color} />
+      <Ionicons name={focused ? name : `${name}-outline`} size={22} color={iconColor} />
     </View>
   );
 }

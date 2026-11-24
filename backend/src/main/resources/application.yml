@@ -53,6 +53,8 @@ spring:
       write-dates-as-timestamps: false
 
 app:
+  seed:
+    community-enabled: ${COMMUNITY_SEED_ENABLED:false}
   jwt:
     issuer: backend1-core
     # 기본값 없음 — 미주입 시 기동 실패한다(운영에서 약한 시크릿으로 뜨는 사고 방지).
