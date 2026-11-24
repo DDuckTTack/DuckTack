@@ -1,21 +1,40 @@
 version: 2
 
-# 저장소에 취약점 경고가 쌓여 있어(critical 포함) 업데이트 PR을 자동으로 받아본다.
-# 한 번에 쏟아지면 리뷰가 불가능하므로 주 1회, 디렉터리당 PR 개수를 제한한다.
+# 현재 상태: 일시 중지 (배포 준비 기간)
+#
+# 배포를 앞두고 의존성을 흔들 수 없어서 open-pull-requests-limit을 0으로 두었다.
+# 0이면 Dependabot이 버전 업데이트 PR을 만들지 않는다.
+#
+# 배포가 끝난 뒤 다시 켜려면 각 항목의 limit을 0에서 3 정도로 올리면 된다.
+# 아래 설정은 이미 정리해둔 상태라 값만 바꾸면 바로 쓸 수 있다:
+#   - 메이저 업데이트는 전 생태계에서 제외 (사람이 판단할 영역)
+#   - 같은 생태계 업데이트는 groups로 묶어 PR 1개로 받는다
+#
+# 참고: 여기 설정은 "버전 업데이트"만 제어한다.
+# 보안 취약점 자동 PR(Dependabot security updates)은 저장소 Settings에서 따로 켜고 끈다.
+
 updates:
   - package-ecosystem: gradle
     directory: /backend
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
+    groups:
+      backend:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
+    groups:
+      frontend:
+        patterns: ["*"]
     # Expo는 SDK 버전에 맞는 패키지 조합을 요구해서, 개별 메이저 업데이트가 오히려 앱을 깨뜨린다.
-    # 메이저는 사람이 판단하고 여기서는 보안/패치성 업데이트만 받는다.
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -24,7 +43,10 @@ updates:
     directory: /company-web
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
+    groups:
+      company-web:
+        patterns: ["*"]
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -33,3 +55,10 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    open-pull-requests-limit: 0
+    groups:
+      github-actions:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
