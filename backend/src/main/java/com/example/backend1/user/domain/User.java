@@ -71,6 +71,10 @@ public class User {
     @Column(nullable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 
+    /** 관리자 차단 여부. 차단되면 로그인·토큰 재발급이 막힌다. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean blocked = false;
+
     protected User() {}
 
     // 일반 회원가입 생성자
@@ -109,6 +113,9 @@ public class User {
     }
 
     public Long getId() { return id; }
+    public boolean isBlocked() { return blocked; }
+    public void block() { this.blocked = true; }
+    public void unblock() { this.blocked = false; }
     public String getUsername() { return username; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
@@ -155,5 +162,21 @@ public class User {
 
     public void changePassword(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    /** 탈퇴 처리: 식별 가능한 개인정보를 모두 지우고 로그인 불가 상태로 만든다. */
+    public void withdraw(String anonymizedUsername, String unusablePasswordHash) {
+        this.username = anonymizedUsername;
+        this.email = null;
+        this.passwordHash = unusablePasswordHash;
+        // phone_number 는 NOT NULL + 유니크 인덱스라 빈 값을 쓰면 두 번째 탈퇴부터 충돌한다.
+        this.phoneNumber = "withdrawn-" + this.id;
+        this.address = null;
+        this.roadAddress = null;
+        this.addressDetail = null;
+        this.postalCode = null;
+        this.latitude = null;
+        this.longitude = null;
+        this.marketingAgreed = false;
     }
 }

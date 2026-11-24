@@ -6,6 +6,7 @@ public enum ErrorCode {
   INVALID_INPUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "입력값이 올바르지 않습니다."),
   AUTH_FAILED(HttpStatus.UNAUTHORIZED, "AUTH_FAILED", "인증에 실패했습니다."),
   ACCESS_DENIED(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "권한이 없습니다."),
+  USER_BLOCKED(HttpStatus.FORBIDDEN, "USER_BLOCKED", "운영 정책 위반으로 이용이 제한된 계정입니다. 고객센터로 문의해주세요."),
   AI_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI_UNAVAILABLE", "AI 분석 서버가 응답하지 않습니다."),
   YOLO_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "YOLO_FAILED", "이미지 분석 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."),
   LLM_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "LLM_FAILED", "가이드 생성 중 오류가 발생했어요."),

@@ -34,6 +34,18 @@ public class AdminUserController {
         return ApiResponse.ok(adminUserService.getUser(id));
     }
 
+    @PatchMapping("/{id}/block")
+    public ApiResponse<Void> block(@PathVariable Long id) {
+        adminUserService.setBlocked(id, true);
+        return ApiResponse.ok(null);
+    }
+
+    @PatchMapping("/{id}/unblock")
+    public ApiResponse<Void> unblock(@PathVariable Long id) {
+        adminUserService.setBlocked(id, false);
+        return ApiResponse.ok(null);
+    }
+
     /** 특정 사용자의 진단 이력 전체 조회 */
     @GetMapping("/{id}/histories")
     public ApiResponse<List<AdminUserDtos.UserHistoryItem>> getUserHistories(@PathVariable Long id) {

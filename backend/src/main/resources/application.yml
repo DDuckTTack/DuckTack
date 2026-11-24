@@ -129,7 +129,9 @@ llm:
   api-key: ${LLM_API_KEY:}
   model: ${LLM_MODEL:gemini-2.5-flash}
   temperature: 0.3
-  max-tokens: ${LLM_MAX_TOKENS:2000}
+  # Gemini 2.5 는 답변 전에 '생각' 토큰(1천 개 안팎)을 쓰고, 그것도 이 한도에 포함된다.
+  # 2000 으로 두면 가이드 JSON 이 중간에 잘려 파싱 실패 → 기본 가이드로 대체된다.
+  max-tokens: ${LLM_MAX_TOKENS:8192}
 
 storage:
   local:

@@ -169,6 +169,7 @@ public class CommunityPostService {
             Authentication authentication
     ) {
         User author = currentUser(authentication);
+        assertBoardWritable(request.boardType(), author);
         validatePost(request.boardType(), request.title(), request.content(),
                 request.regionCode(), request.regionName(), request.productName());
         contentModerationService.validate(request.title().trim() + "\n" + request.content().trim());
@@ -203,6 +204,7 @@ public class CommunityPostService {
         User currentUser = currentUser(authentication);
         CommunityPost post = getActivePost(postId);
         assertEditable(post, currentUser);
+        assertBoardWritable(request.boardType(), currentUser);
         validatePost(request.boardType(), request.title(), request.content(),
                 request.regionCode(), request.regionName(), request.productName());
         contentModerationService.validate(request.title().trim() + "\n" + request.content().trim());
@@ -361,6 +363,13 @@ public class CommunityPostService {
     private CommunityPost getActivePost(Long postId) {
         return communityPostRepository.findByIdAndStatus(postId, CommunityStatus.ACTIVE)
                 .orElseThrow(() -> new ApiException(ErrorCode.INVALID_INPUT, "게시글을 찾을 수 없습니다."));
+    }
+
+    /** 업체홍보 게시판은 업체·관리자 계정만 작성할 수 있다. */
+    private void assertBoardWritable(BoardType boardType, User user) {
+        if (boardType == BoardType.PROMOTION && user.getRole() == UserRole.USER) {
+            throw new ApiException(ErrorCode.ACCESS_DENIED, "업체홍보 게시판은 업체 회원만 작성할 수 있어요.");
+        }
     }
 
     private void validatePost(BoardType boardType, String title, String content,

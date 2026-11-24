@@ -11,6 +11,8 @@ public interface DiagnosisRepository extends JpaRepository<Diagnosis, Long> {
 
     List<Diagnosis> findByUserUsername(String username);
 
+    List<Diagnosis> findByUserId(Long userId);
+
     // 🔥 추가
     List<Diagnosis> findByUserUsernameOrderByCreatedAtDesc(String username);
 }
